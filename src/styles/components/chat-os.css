@@ -326,13 +326,13 @@
 
 .chat-floating-nav {
     background: rgba(17, 17, 17, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* 移动端性能优化：移除耗性能的 backdrop-filter */
     padding: 6px;
     border-radius: 30px;
     display: flex;
     gap: 4px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    /* 移动端性能优化：弱化耗性能的 box-shadow */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     pointer-events: auto;
 }
 
@@ -771,16 +771,14 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.4); /* 移除blur后加深背景颜色 */
     z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.2s ease;
 }
 
 .chat-popup-overlay.active {
@@ -796,16 +794,17 @@
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+    /* 移动端优化：减弱阴影，移除复杂的 cubic-bezier scale 动画 */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     border: 1px solid rgba(0,0,0,0.08);
-    transform: scale(0.98) translateY(10px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(10px);
+    transition: transform 0.2s ease;
     overflow: hidden;
     box-sizing: border-box;
 }
 
 .chat-popup-overlay.active .chat-popup-content {
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
 }
 
 .chat-popup-header {
@@ -1525,16 +1524,16 @@
     flex-direction: column;
     opacity: 0;
     pointer-events: none;
-    /* 高级感：开启 GPU 硬件加速避免白屏和闪烁，适度缩放 */
-    transform: translateZ(0) scale(0.95); 
+    /* 恢复高级的居中弹出动画，使用极其轻量的微缩放，利用已开启的 GPU 加速 */
+    transform: translateZ(0) scale(0.97); 
     will-change: transform, opacity;
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease-out; 
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out; 
 }
 
 .chat-conversation-view.active {
     opacity: 1;
     pointer-events: auto;
-    transform: translateZ(0) scale(1); /* 回到原始大小，形成中间绽开的效果 */
+    transform: translateZ(0) scale(1);
 }
 
 /* 对话界面的 Floating Island Header */

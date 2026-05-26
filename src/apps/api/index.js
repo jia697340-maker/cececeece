@@ -479,6 +479,11 @@ window.SystemApps['api'] = {
         const apiModelInput = container.querySelector('#api-model');
         const modelSelect = container.querySelector('#model-select');
 
+        // 副 API 基本参数元素
+        const subApiBaseUrlInput = container.querySelector('#sub-api-base-url');
+        const subApiKeyInput = container.querySelector('#sub-api-key');
+        const subApiModelInput = container.querySelector('#sub-api-model');
+
         // 主高级参数元素
         const temperatureInput = container.querySelector('#api-temperature');
         const temperatureVal = container.querySelector('#api-temperature-val');

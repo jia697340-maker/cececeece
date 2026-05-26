@@ -1950,7 +1950,8 @@ window.SystemApps['chat'] = {
             if (chatListContainer.dataset.rendering === 'true') return;
             chatListContainer.dataset.rendering = 'true';
             
-            chatListContainer.innerHTML = '';
+            // 使用 DocumentFragment 优化 DOM 插入性能
+            const fragment = document.createDocumentFragment();
             
             // 合并本地保存的角色
             const savedChars = loadCharacters();
@@ -2092,7 +2093,7 @@ window.SystemApps['chat'] = {
                 
                 wrapper.appendChild(actions);
                 wrapper.appendChild(item);
-                chatListContainer.appendChild(wrapper);
+                fragment.appendChild(wrapper);
                 
                 // 绑定点击事件进入对话
                 item.addEventListener('click', () => {
@@ -2179,6 +2180,10 @@ window.SystemApps['chat'] = {
             });
             
             // 绑定置顶和删除事件
+            // 将片段一次性插入 DOM
+            chatListContainer.innerHTML = '';
+            chatListContainer.appendChild(fragment);
+
             chatListContainer.querySelectorAll('.chat-action-btn.delete').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();

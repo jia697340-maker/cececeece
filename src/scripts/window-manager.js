@@ -49,19 +49,18 @@ const WindowManager = {
         // 记录状态
         this.openApps.set(appId, { container });
 
-        // 添加一个很小的延迟，确保 DOM 渲染后再触发动画类
-        setTimeout(() => {
-            const modal = container.querySelector('.settings-modal');
-            if (modal) modal.classList.add('active');
-            
-            // 立即执行内部初始化，不再强制等待动画结束，消除点击 APP 时的迟钝感
-            setTimeout(() => {
-                if (typeof appModule.init === 'function') {
-                    // 传递销毁当前应用的回调，方便内部关闭窗口
-                    appModule.init(() => this.closeApp(appId), container);
-                }
-            }, 10);
-        }, 10);
+        // 立即执行内部初始化，避免 setTimeout 导致的点击迟钝感和白屏
+        if (typeof appModule.init === 'function') {
+            appModule.init(() => this.closeApp(appId), container);
+        }
+
+        // 确保 DOM 渲染后再触发动画类，使用 requestAnimationFrame 替代 setTimeout 提升移动端性能
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const modal = container.querySelector('.settings-modal');
+                if (modal) modal.classList.add('active');
+            });
+        });
     },
 
     // 关闭并销毁 APP
