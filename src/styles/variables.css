@@ -1,0 +1,42 @@
+:root {
+    /* 
+     * 极简浅色高级主题 (Ins / Apple 风) 
+     * 放弃所有渐变，采用极为纯净和高颜值的背景色（例如苹果原生的淡淡浅灰/米白底色）
+     */
+    --bg-color: #F2F2F7; /* Apple 经典系统浅灰背景 */
+    
+    /* 文字和图标全部改为深色，体现浅色主题的质感 */
+    --text-primary: #1C1C1E; /* 几乎纯黑的深灰 */
+    --text-secondary: #8E8E93;
+    --icon-color: #1C1C1E; 
+    
+    /* 亮色磨砂质感 (White Glassmorphism) - 调整为更透明通透的磨砂质感 */
+    --glass-bg: rgba(255, 255, 255, 0.2); /* 图标透明度 */
+    --widget-main-glass-bg: rgba(255, 255, 255, 0.2); /* 顶部大组件透明度 */
+    --widget-square-glass-bg: rgba(255, 255, 255, 0.2); /* 方形小组件透明度 */
+    --glass-bg-hover: rgba(255, 255, 255, 0.35);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.5); /* 边框稍微提亮，增加玻璃反光感 */
+    --glass-blur: blur(15px);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03); /* 阴影更散更淡，增强轻盈感 */
+    
+    /* 动态安全区域 (适配刘海屏、灵动岛、底部手势条) */
+    --safe-top: env(safe-area-inset-top, 47px);
+    --safe-bottom: env(safe-area-inset-bottom, 34px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    
+    /* 组件尺寸与间距 */
+    --status-bar-height: 44px;
+    --app-icon-size: clamp(55px, 16vw, 64px);
+    --app-icon-radius: 18px; /* 更加圆润的苹果图标弧度 */
+    --app-grid-columns: 4;
+    --app-grid-gap-x: 16px;
+    --app-grid-gap-y: 28px;
+    --app-label-size: 12px;
+    --app-label-margin: 6px;
+    
+    --dock-padding: 16px;
+    --dock-radius: 34px;
+    --dock-margin-bottom: 12px;
+    --dock-margin-side: 16px;
+}

@@ -1,0 +1,38 @@
+/* =========================================================
+   Status Bar (顶部状态栏，使用专业图标库)
+   ========================================================= */
+
+#status-bar {
+    width: 100%;
+    height: var(--status-bar-height);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    color: var(--icon-color);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    /* 确保其在最上层 */
+    z-index: 1000;
+}
+
+.status-bar-left {
+    display: flex;
+    align-items: center;
+}
+
+.status-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 7px; /* 稍微增加间距，让图标呼吸感更好 */
+}
+
+/* 调整右上角自定义SVG图标的大小，使其更精致、圆润 */
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 允许SVG颜色继承 */
+    color: var(--icon-color);
+}

@@ -1,0 +1,358 @@
+/* =========================================================
+   Widgets Base Styles (桌面小组件通用样式)
+   ========================================================= */
+
+/* 基础卡片样式 - 所有小组件通用 */
+.widget-card {
+    background: var(--widget-square-glass-bg); /* 默认使用方形组件透明度 */
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 18px; /* 边角稍微收敛一点 */
+    padding: 12px; /* 整体缩减内边距 */
+    color: var(--text-primary);
+    
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+}
+
+/* =========================================
+   专属手机弹窗 (Custom Modal) 样式已迁移至 modal.css
+   此处仅保留 .new-ins-nickname 等 widget 专属样式
+   ========================================= */
+
+/* 新增昵称样式 */
+.new-ins-nickname {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 6px;
+    padding: 0 5px;
+    cursor: pointer;
+    word-break: break-word;
+}
+.new-ins-nickname:active { opacity: 0.7; }
+
+.widget-card:active {
+    transform: scale(0.96);
+}
+
+/* =========================================================
+   区域一：完整版灰白极简个人主页 (占 4 列宽)
+   ========================================================= */
+.new-ins-widget {
+    grid-column: span 4;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px 20px 20px; /* 增加内边距，让整个卡片更饱满 */
+    margin-bottom: 15px; /* 增加与下方 APP 之间的距离 */
+    /* 恢复通用卡片的毛玻璃效果 */
+    background: var(--widget-main-glass-bg); /* 使用大组件专属透明度 */
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: #333;
+    border-radius: 22px; /* 边角稍微圆润一点配合放大 */
+}
+
+/* 顶部：头像 + 数据 */
+.new-ins-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px; /* 头像区与下方的距离增加 */
+}
+
+/* 头像区域 (包含气泡和边框) */
+.new-ins-avatar-section {
+    position: relative;
+    margin-right: 20px;
+    margin-left: 5px;
+}
+
+.new-ins-avatar-wrapper {
+    width: 85px; /* 头像放大 */
+    height: 85px;
+    position: relative;
+    cursor: pointer;
+}
+
+.new-ins-avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    position: relative;
+    z-index: 2;
+    padding: 3px; /* 为外圈留出空间 */
+}
+
+/* 头像外圈圆环 */
+.new-ins-avatar-ring {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    border: 2px solid #e0e0e0;
+    z-index: 1;
+}
+
+/* 头像右下角加号 */
+.new-ins-plus-icon {
+    position: absolute;
+    bottom: 2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #e0e0e0;
+    z-index: 3;
+    font-size: 10px;
+    color: #888;
+}
+
+/* 左上角心形气泡 */
+.new-ins-heart-bubble {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 3px 6px;
+    display: flex;
+    gap: 2px;
+    z-index: 3;
+    font-size: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.new-ins-avatar-wrapper:active img {
+    filter: brightness(0.9);
+}
+
+/* 右侧数据统计 */
+.new-ins-stats {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+    padding-right: 10px;
+}
+
+.new-ins-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+.new-ins-stat:active { opacity: 0.6; }
+
+.new-ins-stat .stat-num {
+    font-size: 1.25rem; /* 数字放大 */
+    font-weight: 700;
+    color: #444;
+    margin-bottom: 4px;
+}
+
+.new-ins-stat .stat-label {
+    font-size: 0.8rem; /* 标签字稍微放大 */
+    color: #999;
+}
+
+/* 中间：多行签名/简介 */
+.new-ins-bio {
+    font-size: 0.95rem; /* 简介字号变大 */
+    line-height: 1.6;
+    color: #666;
+    margin-bottom: 18px; /* 与下方按钮的距离变大 */
+    padding: 0 5px;
+    cursor: pointer;
+    /* 允许长文本换行 */
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.new-ins-bio:active { opacity: 0.7; }
+
+/* 按钮：Edit Profile */
+.new-ins-edit-btn {
+    width: calc(100% - 10px);
+    margin: 0 auto;
+    padding: 8px 0; /* 按钮变高一些 */
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 8px; /* 按钮变圆一点 */
+    font-size: 0.95rem; /* 按钮文字放大 */
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.new-ins-edit-btn:active {
+    background: #f5f5f5;
+}
+
+/* 底部：精选故事栏 (Highlights) */
+.new-ins-highlights {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 5px;
+}
+
+.highlight-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 20%;
+}
+
+.highlight-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-bottom: 5px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #eee;
+    background: #f9f9f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.highlight-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    padding: 2px; /* 留出白边 */
+    border-radius: 50%;
+    background: #fff;
+}
+
+.highlight-circle:active {
+    filter: brightness(0.9);
+}
+
+.new-highlight .highlight-circle {
+    border: 1px solid #333; /* New 按钮的边框更深一点 */
+    background: #fff;
+    color: #333;
+    font-size: 20px;
+}
+
+.highlight-label {
+    font-size: 0.7rem;
+    color: #888;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+}
+.highlight-label:active { opacity: 0.6; }
+
+
+/* =========================================================
+   区域二 & 区域三：方形小组件 (占 2 列宽 × 2 行高)
+   ========================================================= */
+/* 方形组件统一基础 */
+.square-widget {
+    grid-column: span 2;
+    grid-row: span 2; /* 占据两行 */
+    /* 由于 APP 图标缩小(55px)，间距缩小(12px)，整体高度需要随之缩小 */
+    /* APP 图标高度(55px)+文字(25px)+间距(12px)+下一行APP高度(80px) = 约 172px */
+    height: 172px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+/* --- 照片画廊组件 (区域二) --- */
+.photo-widget {
+    padding: 0; /* 图片铺满 */
+    position: relative;
+    cursor: pointer;
+}
+.photo-widget img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    transition: filter 0.2s;
+}
+.photo-widget:active img {
+    filter: brightness(0.8);
+}
+
+/* --- 极简黑胶音乐组件 (区域三) --- */
+.mini-music-widget {
+    justify-content: space-between;
+    padding: 18px 15px;
+}
+
+.mini-vinyl {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #111;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 0 3px #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: spin 6s linear infinite;
+    animation-play-state: paused;
+}
+.mini-vinyl.playing { animation-play-state: running; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.mini-vinyl img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.mini-music-info {
+    width: 100%;
+    margin: 8px 0;
+}
+.mini-music-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mini-music-artist {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mini-music-controls {
+    display: flex;
+    gap: 15px;
+    font-size: 1.1rem;
+}
+.mini-music-controls i {
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.mini-music-controls i:active {
+    transform: scale(0.8);
+}
+.mini-music-play {
+    color: #ff6b81;
+    font-size: 1.4rem;
+}

@@ -1,0 +1,57 @@
+/* =========================================================
+   Reset & Prevent Scrolling (强力锁定视口防回弹)
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* 禁止选中文字和长按保存图片 */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    /* 去除移动端点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 隐藏所有浏览器的原生滚动条 */
+::-webkit-scrollbar {
+    display: none;
+}
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    /* 移除强制的 overflow: hidden，恢复移动端浏览器原生手势和滚动控制 */
+    /* 防止橡皮筋效果可由内容高度自适应处理 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+}
+
+/* 仅在电脑端进行居中限制，移动端彻底释放，贴合原生视口 */
+@media (min-width: 431px) {
+    html, body {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+}
+
+/* 如果后续需要允许点击事件透传，可以在特定元素上写 touch-action: auto 或 manipulation */
+a, button {
+    text-decoration: none;
+    outline: none;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}

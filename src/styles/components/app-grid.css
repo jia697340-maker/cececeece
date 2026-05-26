@@ -1,0 +1,150 @@
+/* =========================================================
+   Desktop Grid & Swiper (主屏幕混合网格与横向滑动)
+   ========================================================= */
+
+/* --- 横向滑动容器区域 --- */
+#home-screen {
+    position: relative;
+    width: 100%;
+    /* 占满中间部分，去除底部预留的 pagination 空间 */
+    height: calc(100% - 20px); 
+    overflow: hidden;
+}
+
+.swiper-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.swiper-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 苹果式丝滑回弹动画 */
+}
+
+/* 每一页占据屏幕 100% 宽度 */
+.swiper-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    /* 释放桌面的垂直滚动，防止小组件过多时无法查看底部内容 */
+    overflow-y: auto; 
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* 恢复原生滚动 */
+    /* 隐藏滚动条 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.swiper-slide::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* --- 网格系统 --- */
+/* 新的桌面布局：4列网格，处理小组件和 APP 的混合排列 */
+.desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: min-content; /* 让高度自适应内容 */
+    grid-column-gap: 12px; /* APP之间的横向间距缩小 */
+    grid-row-gap: 12px;    /* 纵向间距大幅缩小，以容纳下所有组件 */
+    width: 92%;
+    max-width: 500px;
+    margin: 10px auto 10px auto; /* 减少外边距 */
+    padding-bottom: 10px;
+}
+
+/* =========================================================
+   App Grid Items (普通 APP 图标)
+   ========================================================= */
+/* 每个 App 的外层容器，占据 1 个网格单元 */
+.app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    grid-column: span 1;
+}
+
+/* 单字高级半磨砂透明图标 (Glassmorphism) */
+.app-icon {
+    width: 55px; 
+    height: 55px;
+    border-radius: var(--app-icon-radius, 16px); /* 动态图标形状，可全局或独立配置 */
+    
+    /* 核心：统一的半磨砂玻璃质感 */
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 加入 GPU 加速优化点击动画 */
+    will-change: transform;
+    transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), background 0.2s ease;
+}
+
+/* 专门为文字图标定制的高级排版样式 */
+.app-icon.text-icon {
+    color: var(--text-primary); /* 统一跟随全局文本颜色 */
+    font-size: 26px; /* 字体大小适中，留白高级 */
+    font-weight: 600; /* 中等偏粗，结实有力 */
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft Yahei", Tahoma, sans-serif;
+    letter-spacing: -0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* 提升文字清晰度 */
+}
+
+/* 触摸反馈：按下时缩小并加深磨砂背景，模拟真实物理按压 */
+.app-item:active .app-icon {
+    transform: scale(0.92);
+    background: var(--glass-bg-hover);
+}
+
+/* App 下方的文字标签 */
+.app-label {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    /* 超出隐藏，单行显示 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 65px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================================
+   Pagination Dots (翻页小圆点指示器)
+   ========================================================= */
+.pagination-dots {
+    position: absolute;
+    bottom: -15px; /* 紧贴在 home-screen 底部 */
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.dot.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.2);
+}

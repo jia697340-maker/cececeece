@@ -1,0 +1,92 @@
+/* =========================================================
+   Dock (底部状态栏 / 常用应用区)
+   ========================================================= */
+
+#dock {
+    width: 100%;
+    /* 保持底部边距，让 Dock 看起来悬浮在底部 */
+    padding-bottom: var(--dock-margin-bottom);
+    padding-left: var(--dock-margin-side);
+    padding-right: var(--dock-margin-side);
+    /* 配合 Flex 布局固定在底部 */
+    flex-shrink: 0;
+    z-index: 1000;
+}
+
+.dock-container {
+    /* 类似毛玻璃的效果 - 使用统一的变量，保持透明磨砂质感 */
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    border-radius: var(--dock-radius);
+    box-shadow: var(--glass-shadow);
+    padding: var(--dock-padding);
+    
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 600px; /* 和 app-grid 同宽 */
+    margin: 0 auto;
+}
+
+/* Dock 内部也有类似 App 的图标 */
+.dock-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--app-icon-size);
+    height: var(--app-icon-size);
+    border-radius: var(--app-icon-radius);
+    background: transparent;
+    transition: background 0.2s ease, transform 0.1s ease;
+    color: var(--icon-color);
+}
+
+.dock-item:active {
+    background: var(--glass-bg-hover);
+    transform: scale(0.92);
+}
+
+.dock-item svg {
+    width: 50%;
+    height: 50%;
+    fill: currentColor;
+}
+
+/* --- Dock 动态显示文字功能 --- */
+.dock-item {
+    flex-direction: column;
+    height: auto; /* 允许高度自适应以容纳文字 */
+    padding: 5px 0;
+}
+
+.dock-item .app-icon {
+    /* 保持原有图标大小 */
+    margin-bottom: 0;
+    transition: margin-bottom 0.3s ease;
+}
+
+/* 默认隐藏 Dock 文字 */
+.dock-item .app-label {
+    font-size: 11px;
+    color: var(--text-color);
+    margin-top: 5px;
+    font-weight: 500;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease, height 0.3s ease;
+    /* 增加一点文字阴影以防背景太白看不清 */
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+
+/* 开启显示文字状态 */
+.dock-container.show-names .dock-item .app-label {
+    opacity: 1;
+    height: 14px; /* 根据字体大小设定固定高度 */
+}
+
+.dock-container.show-names .dock-item .app-icon {
+    margin-bottom: 2px;
+}

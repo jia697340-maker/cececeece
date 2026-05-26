@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 强制不缩放，适配刘海屏，禁止用户缩放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>粘人精</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/7LPZbcZt/96216B8854F9DEEEEB31103DBED55C19.png">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/7LPZbcZt/96216B8854F9DEEEEB31103DBED55C19.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="粘人精">
+
+    <!-- 引入全球顶级开源图标库 Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- 引入 mammoth.js 用于前端读取 docx 文本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="src/styles/reset.css?v=2">
+    <link rel="stylesheet" href="src/styles/variables.css?v=2">
+    <link rel="stylesheet" href="src/styles/layout.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/status-bar.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/app-grid.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/dock.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/widget.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/modal.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/settings.css?v=2">
+    <link rel="stylesheet" href="src/styles/components/chat-os.css?v=2">
+</head>
+<body>
+    <!-- 主容器，承载所有UI，并且处理背景和全面屏安全区域 -->
+    <div id="app-container">
+        
+        <!-- 顶部状态栏 (采用专业 Phosphor 图标库) -->
+        <header id="status-bar">
+            <div class="status-bar-left">
+                <span id="clock">00:00</span>
+            </div>
+            <div class="status-bar-right">
+                <!-- Wi-Fi (极简精致圆润版) -->
+                <svg class="status-icon" width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 最外层波纹 -->
+                    <path d="M1.5 4.5 C 5.5 1.5 10.5 1.5 14.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <!-- 中层波纹 -->
+                    <path d="M4 8 C 6.5 6 9.5 6 12 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <!-- 内部中心点 -->
+                    <circle cx="8" cy="12" r="1.8" fill="currentColor"/>
+                </svg>
+                <!-- 电池 (圆润) -->
+                <svg class="status-icon" width="25" height="14" viewBox="0 0 25 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1.5" width="20" height="11" rx="3.5" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M24 5 V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <rect x="3" y="3.5" width="16" height="7" rx="2" fill="currentColor"/>
+                </svg>
+            </div>
+        </header>
+
+        <!-- 主屏幕内容区 (多页横向滑动) -->
+        <main id="home-screen">
+            <!-- 滑动视口 -->
+            <div class="swiper-container" id="swiper-container">
+                <!-- 所有页面的横向包裹容器 -->
+                <div class="swiper-wrapper" id="swiper-wrapper">
+                    <!-- 第一页：混合排版 (顶部组件 + 4 App + 1 照片组件) -->
+                    <div class="swiper-slide page-1">
+                        <div class="desktop-grid" id="page-1-grid">
+                            <!-- 内部由 JS 动态插入 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 第二页：纯 APP 排版 -->
+                    <div class="swiper-slide page-2">
+                        <div class="desktop-grid" id="page-2-grid">
+                            <!-- 内部由 JS 动态插入 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 分页指示器 (小圆点) -->
+            <div class="pagination-dots" id="pagination-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+            </div>
+        </main>
+
+        <!-- 底部 Dock 栏 -->
+        <footer id="dock">
+            <div class="dock-container">
+                <!-- Dock 图标将由 JS 动态生成 -->
+            </div>
+        </footer>
+
+        <!-- 专属手机弹窗 (极简提示弹窗) -->
+        <div id="custom-modal" class="custom-modal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content-wrapper">
+                <button class="modal-close-btn" id="modal-cancel-icon" aria-label="关闭">
+                    <i class="ph ph-x"></i>
+                </button>
+                
+                <h3 class="modal-title" id="modal-title">提示</h3>
+                <p class="modal-message" id="modal-message"></p>
+                
+                <div class="modal-inputs" id="modal-inputs-container">
+                    <textarea id="modal-input" class="modal-input" style="display: none;" rows="3"></textarea>
+                    <input type="text" id="modal-input-2" class="modal-input" style="display: none;" />
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-primary modal-btn-icon-center" id="modal-confirm">
+                        <span class="btn-text">确认</span>
+                    </button>
+                    <button class="modal-btn modal-btn-danger modal-btn-icon-center" id="modal-reset" style="display: none;">
+                        <span class="btn-text">重置</span>
+                    </button>
+                    <button class="modal-btn modal-btn-secondary modal-btn-icon-center" id="modal-cancel">
+                        <span class="btn-text">取消</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片更换弹窗 (极简功能性弹窗) -->
+        <div id="image-modal" class="custom-modal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content-wrapper">
+                <button class="modal-close-btn" id="img-modal-cancel">
+                    <i class="ph ph-x"></i>
+                </button>
+                
+                <h3 class="modal-title">更换图片</h3>
+                <p class="modal-message">支持上传本地高清长图、动图，或直接粘贴网络链接。</p>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-primary" id="btn-img-local">
+                        <i class="ph ph-upload-simple"></i>
+                        <span class="btn-text">上传本地图片</span>
+                        <span class="modal-badge">Main</span>
+                    </button>
+                    <button class="modal-btn modal-btn-secondary" id="btn-img-url">
+                        <i class="ph ph-link"></i>
+                        <span class="btn-text">使用网络 URL</span>
+                    </button>
+                    <div class="modal-divider"></div>
+                    <button class="modal-btn modal-btn-danger" id="btn-img-reset">
+                        <i class="ph ph-arrows-clockwise"></i>
+                        <span class="btn-text">恢复默认设置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- 隐藏的文件选择器 -->
+        <input type="file" id="global-file-input" accept="image/*" style="display: none;">
+
+    <!-- 结束 app-container -->
+    </div>
+
+    <!-- 引入全局模板与常量 -->
+    <script src="src/apps/chat/constants.js"></script>
+    <script src="src/apps/chat/storage.js"></script>
+    <script src="src/apps/chat/template.js"></script>
+    <script src="src/apps/chat/api.js"></script>
+    <script src="src/apps/chat/render.js"></script>
+
+    <!-- 引入系统核心依赖 -->
+    <script src="src/scripts/window-manager.js"></script>
+    <!-- 去掉 type="module"，解决直接双击打开时不执行 JS 的问题 -->
+    <script src="src/scripts/main.js"></script>
+</body>
+</html>
