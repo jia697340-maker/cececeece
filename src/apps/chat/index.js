@@ -848,8 +848,10 @@ window.SystemApps['chat'] = {
             });
         }
 
-        // 初始化加载 Profile
-        updateProfileDisplay();
+        // 初始化加载 Profile (推迟以防阻塞首屏动画)
+        setTimeout(() => {
+            updateProfileDisplay();
+        }, 100);
 
         // 1. 人设库逻辑
         const listContainer = container.querySelector('#persona-list-container');
@@ -1944,6 +1946,10 @@ window.SystemApps['chat'] = {
 
         const renderChatList = async () => {
             if (!chatListContainer) return;
+            // 避免重复渲染导致闪烁
+            if (chatListContainer.dataset.rendering === 'true') return;
+            chatListContainer.dataset.rendering = 'true';
+            
             chatListContainer.innerHTML = '';
             
             // 合并本地保存的角色
@@ -2211,9 +2217,13 @@ window.SystemApps['chat'] = {
             });
             
             updateTotalUnreadBadge();
+            chatListContainer.dataset.rendering = 'false';
         };
 
-        renderChatList();
+        // 延迟渲染聊天列表，让 CSS 弹出动画优先流畅执行完毕
+        setTimeout(() => {
+            renderChatList();
+        }, 250);
 
         // --- 渲染动态列表 ---
         const dynamicContainer = container.querySelector('#chat-dynamic-container');
