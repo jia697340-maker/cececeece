@@ -76,8 +76,6 @@
     
     /* 核心：统一的半磨砂玻璃质感 */
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: var(--glass-border);
     box-shadow: var(--glass-shadow);
     

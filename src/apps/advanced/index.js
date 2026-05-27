@@ -178,7 +178,7 @@ window.SystemApps['advanced'] = {
             </div>
 
             <!-- 全局系统提示词编辑弹窗 -->
-            <div class="settings-backdrop" id="global-prompt-backdrop" style="display: none; z-index: 100; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"></div>
+            <div class="settings-backdrop" id="global-prompt-backdrop" style="display: none; z-index: 100; background-color: rgba(0, 0, 0, 0.4);"></div>
             <div id="global-prompt-modal" class="settings-container" style="display: none; z-index: 101; position: absolute; top: 5%; bottom: 5%; left: 5%; right: 5%; width: auto; max-width: none; background: #ffffff; border-radius: 16px; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; height: 90%;">
                 <header class="settings-header" style="flex-shrink: 0; background: #f8f8f8; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 16px;">
                     <h1 class="settings-header-title" style="font-weight: 600; font-size: 16px; color: #111;">全局系统提示词</h1>

@@ -16,8 +16,6 @@
 .dock-container {
     /* 类似毛玻璃的效果 - 使用统一的变量，保持透明磨砂质感 */
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: var(--glass-border);
     border-radius: var(--dock-radius);
     box-shadow: var(--glass-shadow);

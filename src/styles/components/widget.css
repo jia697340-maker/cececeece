@@ -5,8 +5,6 @@
 /* 基础卡片样式 - 所有小组件通用 */
 .widget-card {
     background: var(--widget-square-glass-bg); /* 默认使用方形组件透明度 */
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: 18px; /* 边角稍微收敛一点 */
@@ -51,8 +49,6 @@
     margin-bottom: 15px; /* 增加与下方 APP 之间的距离 */
     /* 恢复通用卡片的毛玻璃效果 */
     background: var(--widget-main-glass-bg); /* 使用大组件专属透明度 */
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: var(--glass-border);
     box-shadow: var(--glass-shadow);
     color: #333;

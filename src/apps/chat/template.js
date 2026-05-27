@@ -369,7 +369,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 7. 自定义 Alert 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-alert-popup" style="z-index: 999; background-color: rgba(0, 0, 0, 0.15); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);">
+                <div class="chat-popup-overlay" id="chat-alert-popup" style="z-index: 999; background-color: rgba(0, 0, 0, 0.4);">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; border-radius: 12px; overflow: hidden; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box; text-align: left;">
                         <h3 id="chat-alert-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0 0 12px 0; display: none; letter-spacing: -0.01em;">提示</h3>
                         <p id="chat-alert-message" style="font-size: 14px; color: #52525b; margin: 0 0 24px 0; line-height: 1.6; word-break: break-word;"></p>
@@ -549,7 +549,7 @@ window.ChatAppTemplate = `
                                         <span id="cs-user-persona-selected-text">默认全局身份</span>
                                         <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-user-persona-caret"></i>
                                     </div>
-                                    <div id="cs-user-persona-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 42px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                    <div id="cs-user-persona-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 42px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                     </div>
                                     <input type="hidden" id="cs-user-persona-select" value="">
                                 </div>
@@ -612,7 +612,7 @@ window.ChatAppTemplate = `
                                     </div>
                                     
                                     <!-- 自定义下拉选项面板 -->
-                                    <div id="cs-worldbook-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-worldbook-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         <!-- 动态选项 -->
                                     </div>
                                     
@@ -758,10 +758,31 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-avatar-display-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-avatar-display-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-avatar-display-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-avatar-display-select" value="hide_me">
+                                    </div>
+
+                                    <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
+                                        <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+                                            <span><i class="ph ph-square-half"></i> 角色头像形状</span>
+                                        </label>
+                                        <div id="cs-char-avatar-shape-trigger" style="background-color: var(--app-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+                                            <span id="cs-char-avatar-shape-text">圆形 (默认)</span>
+                                            <i class="ph ph-caret-right" style="color: var(--text-secondary);"></i>
+                                        </div>
+                                        <input type="hidden" id="cs-char-avatar-shape-val" value="">
+
+                                        <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between; margin-top: 12px;">
+                                            <span><i class="ph ph-square-half"></i> 用户头像形状</span>
+                                        </label>
+                                        <div id="cs-user-avatar-shape-trigger" style="background-color: var(--app-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+                                            <span id="cs-user-avatar-shape-text">圆形 (默认)</span>
+                                            <i class="ph ph-caret-right" style="color: var(--text-secondary);"></i>
+                                        </div>
+                                        <input type="hidden" id="cs-user-avatar-shape-val" value="">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 6px;">分别设置角色和用户的头像形状，支持预设及自定义CSS。</div>
                                     </div>
 
                                     <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
@@ -774,7 +795,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-bubble-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-bubble-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-bubble-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-bubble-style-select" value="default">
@@ -790,7 +811,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-quote-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-quote-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-quote-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-quote-style-select" value="inside">
@@ -849,7 +870,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-msg-time-pos-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-msg-time-pos-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-msg-time-pos-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-msg-time-pos-select" value="none">
@@ -865,7 +886,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-msg-time-format-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-msg-time-format-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-msg-time-format-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-msg-time-format-select" value="hm">
@@ -930,7 +951,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-typing-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-typing-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">
+                                        <div id="cs-typing-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-typing-style-select" value="both">
@@ -985,7 +1006,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 12. 自定义 Prompt 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-prompt-popup" style="z-index: 1005; background-color: rgba(0, 0, 0, 0.15); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); transition: opacity 0.2s ease;">
+                <div class="chat-popup-overlay" id="chat-prompt-popup" style="z-index: 1005; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; text-align: left; border-radius: 12px; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box; transition: all 0.3s ease; display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 16px 0;">
                             <h3 id="chat-prompt-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0; letter-spacing: -0.01em;">输入</h3>
@@ -1005,7 +1026,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 9. 自定义 Confirm 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-confirm-popup" style="z-index: 1000; background-color: rgba(0, 0, 0, 0.15); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); transition: opacity 0.2s ease;">
+                <div class="chat-popup-overlay" id="chat-confirm-popup" style="z-index: 1000; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; text-align: left; border-radius: 12px; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box;">
                         <h3 id="chat-confirm-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0 0 8px 0; letter-spacing: -0.01em;">提示</h3>
                         <p id="chat-confirm-message" style="font-size: 14px; color: #52525b; margin: 0 0 24px 0; line-height: 1.6; word-break: break-word;"></p>
@@ -1089,6 +1110,19 @@ window.ChatAppTemplate = `
                                 <div class="ext-item" id="btn-ext-image"><div class="ext-icon"><i class="ph ph-image"></i></div><span class="ext-text">图片</span></div>
                                 <div class="ext-item" id="btn-ext-location"><div class="ext-icon"><i class="ph ph-map-pin"></i></div><span class="ext-text">位置</span></div>
                             </div>
+                            <!-- 表情面板 -->
+                            <div class="chat-composer-ext-panel" id="chat-conv-emoji-panel" style="display: none; padding: 12px; background: var(--app-bg); border-top: 1px solid var(--border-color); flex-direction: column; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">自定义表情</span>
+                                    <button id="btn-manage-emojis" class="chat-btn-text" style="font-size: 12px; padding: 2px 4px;"><i class="ph ph-gear"></i> 管理</button>
+                                </div>
+                                <div id="emoji-picker-groups" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 4px; scrollbar-width: none;">
+                                    <!-- 表情分组动态生成 -->
+                                </div>
+                                <div id="emoji-list-container" style="display: flex; flex-wrap: wrap; gap: 12px; max-height: 180px; overflow-y: auto; justify-content: flex-start; align-content: flex-start;">
+                                    <!-- 表情项动态生成 -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1138,7 +1172,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 16. 时区选择弹窗 -->
-                <div class="chat-popup-overlay" id="chat-timezone-popup" style="z-index: 1050; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); transition: opacity 0.2s ease;">
+                <div class="chat-popup-overlay" id="chat-timezone-popup" style="z-index: 1050; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
                     <div class="chat-popup-content" style="max-width: 360px; width: 90%; height: 80%; max-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: #ffffff; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08);">
                         <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; background: #f9f9f9; flex-shrink: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1172,6 +1206,173 @@ window.ChatAppTemplate = `
                         <div class="chat-popup-footer" style="display: flex; flex-direction: column; gap: 12px; border: none; padding: 0; background: transparent; width: 100%;">
                             <button class="chat-btn-text btn-location-ok" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; color: #ffffff; background: #18181b; border-radius: 14px; border: none; cursor: pointer; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);">发送</button>
                             <button class="chat-btn-text btn-location-cancel" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; color: #3f3f46; background: #f4f4f5; border-radius: 14px; border: none; cursor: pointer; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);">取消</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 17. 自定义头像形状弹窗 -->
+                <div class="chat-popup-overlay popup-container" id="cs-avatar-shape-popup" style="z-index: 1060; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease; display: none;">
+                    <div class="chat-popup-content popup-content" style="max-width: 380px; width: 90%; background: #ffffff; border-radius: 16px; box-shadow: 0 24px 48px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.08); overflow: hidden;">
+                        <div class="chat-popup-header popup-header" style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <h3 class="chat-popup-title popup-title" id="cs-avatar-shape-title" style="margin: 0; font-size: 16px; font-weight: 600; color: #18181b;">自定义头像形状</h3>
+                            <button class="chat-popup-close popup-close-btn btn-close-shape-popup" style="background: none; border: none; font-size: 18px; color: #999; cursor: pointer;"><i class="ph ph-x"></i></button>
+                        </div>
+                        
+                        <div class="chat-popup-body popup-body" style="padding: 16px; background: #f9f9f9;">
+                            <p class="settings-item-desc" style="margin: 0 0 12px 0; font-size: 13px; color: #52525b;">选择下方预设形状，或输入 CSS 代码自定义。</p>
+                        
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+                                <button class="cs-shape-preset-btn chat-btn-text" data-code="border-radius: 4px;" style="background: #fff; border: 1px solid #e5e5ea; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;">方形</button>
+                                <button class="cs-shape-preset-btn chat-btn-text" data-code="border-radius: 18px;" style="background: #fff; border: 1px solid #e5e5ea; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;">圆角</button>
+                                <button class="cs-shape-preset-btn chat-btn-text" data-code="border-radius: 50%;" style="background: #fff; border: 1px solid #e5e5ea; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;">圆形</button>
+                                <button class="cs-shape-preset-btn chat-btn-text" data-code="border-radius: 50% 0 50% 50%;" style="background: #fff; border: 1px solid #e5e5ea; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;">泪滴形</button>
+                                <button class="cs-shape-preset-btn chat-btn-text" data-code="border-radius: 0;\nclip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);" style="background: #fff; border: 1px solid #e5e5ea; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;">菱形</button>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                                <span style="font-size: 12px; color: var(--text-secondary);">我的预设:</span>
+                                <div id="cs-avatar-shape-custom-presets" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+                            </div>
+
+                            <div style="margin-bottom: 0;">
+                                <textarea id="cs-avatar-shape-code" class="persona-textarea" spellcheck="false" placeholder="例如：border-radius: 50%;" rows="3" style="font-family: monospace; font-size: 12px; margin-bottom: 0; background: #fff;"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="chat-popup-footer popup-actions" style="padding: 16px; border-top: 1px solid var(--border-color); background: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+                            <button class="chat-btn-text" id="btn-save-cs-shape-preset" style="color: #007AFF; font-size: 13px; padding: 6px;">存为预设</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="chat-btn-text btn-close-shape-popup" style="font-size: 13px; padding: 8px 16px; color: #52525b; background: #f4f4f5; border-radius: 8px;">取消</button>
+                                <button class="chat-btn-primary" id="btn-apply-cs-shape-code" style="font-size: 13px; padding: 8px 16px; border-radius: 8px;">确认</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 18. 表情管理弹窗 -->
+                <div class="chat-popup-overlay" id="chat-emoji-manage-popup" style="z-index: 1010; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 500px; width: 90%; height: 85%; max-height: 600px; display: flex; flex-direction: column;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">管理表情包</h3>
+                            <div class="chat-popup-actions" style="display: flex; align-items: center;">
+                                <button class="chat-btn-text" id="btn-manage-emojis-multi" style="margin-right: 8px;">多选</button>
+                                <button class="chat-popup-close btn-close-popup">✕</button>
+                            </div>
+                        </div>
+                        <div class="chat-popup-body" style="flex: 1; display: flex; overflow: hidden; padding: 0;">
+                            <!-- 左侧：分组列表 -->
+                            <div style="width: 100px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: #f9f9f9; flex-shrink: 0;">
+                                <div class="chat-scroll-area" id="emoji-manage-groups" style="flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 4px;">
+                                    <!-- 动态生成分组 -->
+                                </div>
+                                <button class="chat-btn-text" id="btn-add-emoji-group" style="padding: 12px 8px; font-size: 13px; color: var(--text-color); border-top: 1px solid var(--border-color); border-radius: 0; display: flex; align-items: center; justify-content: center; gap: 4px;"><i class="ph ph-plus"></i> 新建</button>
+                            </div>
+                            
+                            <!-- 右侧：表情列表和搜索 -->
+                            <div style="flex: 1; display: flex; flex-direction: column; padding: 12px; overflow: hidden;">
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-shrink: 0;">
+                                    <div style="position: relative; flex: 1;">
+                                        <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 14px;"></i>
+                                        <input type="text" id="emoji-manage-search" placeholder="搜索表情..." style="width: 100%; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px 6px 30px; font-size: 13px; color: #18181b; outline: none; box-sizing: border-box;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-shrink: 0;">
+                                    <button class="chat-btn-outline" id="btn-add-emoji-single" style="flex: 1; padding: 6px; font-size: 12px;"><i class="ph ph-plus"></i> 单个添加</button>
+                                    <button class="chat-btn-outline" id="btn-add-emoji-batch" style="flex: 1; padding: 6px; font-size: 12px;"><i class="ph ph-list-plus"></i> 批量导入</button>
+                                    <button class="chat-btn-outline" id="btn-manage-group-actions" style="padding: 6px; font-size: 13px; width: 32px;" title="当前分组操作"><i class="ph ph-dots-three"></i></button>
+                                </div>
+                                <div class="chat-scroll-area" style="flex: 1;">
+                                    <div id="emoji-manage-list" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; align-content: flex-start;">
+                                        <!-- 动态生成 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer" id="emoji-manage-footer" style="display: none; gap: 8px; flex-wrap: wrap;">
+                            <button class="chat-btn-outline" id="btn-select-all-emojis" style="flex: 1; font-size: 13px; padding: 8px;">全选</button>
+                            <button class="chat-btn-outline" id="btn-move-selected-emojis" style="flex: 1; font-size: 13px; padding: 8px;">移动</button>
+                            <button class="chat-btn-danger" id="btn-delete-selected-emojis" style="flex: 1.5; background-color: #FF3B30; color: white; font-size: 13px; padding: 8px;" disabled>删除 (0)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 19. 单个添加表情弹窗 -->
+                <div class="chat-popup-overlay" id="chat-emoji-single-popup" style="z-index: 1020; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title" id="emoji-single-title">添加表情</h3>
+                            <button class="chat-popup-close btn-close-popup">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="padding: 16px;">
+                            <div class="persona-form">
+                                <div class="persona-form-group">
+                                    <label>表情名称 (必填)</label>
+                                    <input type="text" id="emoji-single-name" class="persona-input" placeholder="例如：开心">
+                                </div>
+                                <div class="persona-form-group">
+                                    <label>所属分组</label>
+                                    <select id="emoji-single-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                                </div>
+                                <div class="persona-form-group">
+                                    <label>图片链接</label>
+                                    <input type="text" id="emoji-single-url" class="persona-input" placeholder="输入网络图片URL">
+                                    <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
+                                    <button class="chat-btn-outline" id="btn-emoji-single-upload" style="width: 100%;"><i class="ph ph-upload-simple"></i> 选择本地图片</button>
+                                    <input type="file" id="input-emoji-single-upload" accept="image/*" style="display: none;">
+                                </div>
+                                <div id="emoji-single-preview-container" style="display: none; text-align: center; margin-top: 12px;">
+                                    <img id="emoji-single-preview" src="" style="max-width: 80px; max-height: 80px; border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-save-emoji-single" style="width: 100%;">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 20. 批量导入表情弹窗 -->
+                <div class="chat-popup-overlay" id="chat-emoji-batch-popup" style="z-index: 1020; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 400px; width: 90%; height: 80%; max-height: 500px; display: flex; flex-direction: column;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">批量/文档导入</h3>
+                            <button class="chat-popup-close btn-close-popup">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; display: flex; flex-direction: column;">
+                            <div class="persona-form" style="flex: 1; display: flex; flex-direction: column;">
+                                <div class="persona-form-group" style="margin-bottom: 12px;">
+                                    <label>导入到分组</label>
+                                    <select id="emoji-batch-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                                </div>
+                                <div class="persona-form-group" style="flex: 1; display: flex; flex-direction: column;">
+                                    <label>粘贴文本 (智能识别：前面是名字，后面是链接，支持任意符号分隔)</label>
+                                    <textarea id="emoji-batch-text" class="persona-textarea" placeholder="开心: https://xxx.jpg&#10;大笑 | https://xxx.jpg&#10;委屈——https://xxx.jpg&#10;愤怒，https://xxx.jpg" style="flex: 1; min-height: 150px; font-family: monospace; white-space: pre;"></textarea>
+                                </div>
+                                <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
+                                <button class="chat-btn-outline" id="btn-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX 文档</button>
+                                <input type="file" id="input-emoji-batch-upload" accept=".txt,.doc,.docx" style="display: none;">
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-save-emoji-batch" style="width: 100%;">解析并导入</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 21. 表情包移动分组弹窗 -->
+                <div class="chat-popup-overlay" id="chat-emoji-move-popup" style="z-index: 1030; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title" id="emoji-move-title">移动到分组</h3>
+                            <button class="chat-popup-close btn-close-popup">✕</button>
+                        </div>
+                        <div class="chat-popup-body" style="padding: 16px;">
+                            <div class="persona-form-group" style="margin: 0;">
+                                <select id="emoji-move-target-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-confirm-move-emojis" style="width: 100%;">确认移动</button>
                         </div>
                     </div>
                 </div>

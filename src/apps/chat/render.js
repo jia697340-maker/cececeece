@@ -148,6 +148,7 @@ window.ChatRender = {
             type, text, persona, isTyping, msgObj, indexInHistory,
             charConfig, activeUser,
             quoteStyleOption, bubbleStyle, bColors, voiceWaveEnabled, avatarDisplay,
+            charAvatarShape, userAvatarShape,
             msgTimePos, msgTimeFormat, timeStr
         } = params;
 
@@ -171,10 +172,13 @@ window.ChatRender = {
 
         let avatarTimeHtml = (timeStr && msgTimePos === 'avatar') ? `<div style="font-size: 10px; color: var(--text-secondary); opacity: 0.8; margin-top: 4px; text-align: center; width: 100%; white-space: nowrap; font-family: monospace;">${timeStr}</div>` : '';
 
+        let charAvatarCustomStyle = charAvatarShape ? charAvatarShape : '';
+        let userAvatarCustomStyle = userAvatarShape ? userAvatarShape : '';
+
         if (type === 'them' && persona && avatarDisplay !== 'hide_them' && avatarDisplay !== 'hide_both') {
-            avatarHtmlThem = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><div class="chat-bubble-avatar" style="background-color: ${persona.color}; color: ${persona.textColor};">${persona.initials}</div>${avatarTimeHtml}</div>`;
+            avatarHtmlThem = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><div class="chat-bubble-avatar" style="background-color: ${persona.color}; color: ${persona.textColor}; ${charAvatarCustomStyle}">${persona.initials}</div>${avatarTimeHtml}</div>`;
             if (persona.avatarUrl) {
-                avatarHtmlThem = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><img src="${persona.avatarUrl}" class="chat-bubble-avatar" style="object-fit: cover;">${avatarTimeHtml}</div>`;
+                avatarHtmlThem = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><img src="${persona.avatarUrl}" class="chat-bubble-avatar" style="object-fit: cover; ${charAvatarCustomStyle}">${avatarTimeHtml}</div>`;
             }
         }
 
@@ -183,7 +187,7 @@ window.ChatRender = {
             const myInitials = myName.charAt(0);
             const uniqueId = 'me-avatar-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
             
-            avatarHtmlMe = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><div class="chat-bubble-avatar me-avatar-placeholder" id="${uniqueId}" data-userid="${activeUser.id}" style="background-color: #111; color: #fff;">${myInitials}</div>${avatarTimeHtml}</div>`;
+            avatarHtmlMe = `<div class="chat-bubble-avatar-wrapper" style="display: flex; flex-direction: column; align-items: center;"><div class="chat-bubble-avatar me-avatar-placeholder" id="${uniqueId}" data-userid="${activeUser.id}" style="background-color: #111; color: #fff; ${userAvatarCustomStyle}">${myInitials}</div>${avatarTimeHtml}</div>`;
             
             // 异步替换头像 (由调用方在插入 DOM 后执行处理，这里我们暴露出来)
             setTimeout(() => {
@@ -195,6 +199,7 @@ window.ChatRender = {
                             img.src = url;
                             img.className = 'chat-bubble-avatar';
                             img.style.objectFit = 'cover';
+                            if (userAvatarCustomStyle) img.style.cssText = `object-fit: cover; ${userAvatarCustomStyle}`;
                             el.replaceWith(img);
                         }
                     }).catch(()=>{});
@@ -263,7 +268,47 @@ window.ChatRender = {
         const imageRegex = /\[\[IMAGE:(.*?)\]\]/g;
         const locationRegex = /\[\[LOCATION:(.*?)\]\]/g;
         const transferReceiptRegex = /\[\[TRANSFER_RECEIPT:([^|]+)\|([^|]+)(?:\|([^\]]+))?\]\]/g;
+        const emojiRegex = /\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g;
         
+        // 自定义表情渲染处理
+        if (text.match(emojiRegex)) {
+            const emojis = [];
+            try {
+                emojis.push(...JSON.parse(localStorage.getItem('nrj-custom-emojis') || '[]'));
+            } catch(e) {}
+            
+            displayText = text.replace(emojiRegex, (match, emojiId, emojiName) => {
+                const found = emojis.find(e => e.id === emojiId);
+                if (found) {
+                    const uniqueId = 'emoji-img-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
+                    let src = found.type === 'url' ? found.url : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    
+                    if (found.type === 'local') {
+                        setTimeout(() => {
+                            if (window.ImageStorageManager) {
+                                window.ImageStorageManager.loadFromIndexedDB(found.id).then(data => {
+                                    if (data) {
+                                        const el = document.getElementById(uniqueId);
+                                        if (el) el.src = data;
+                                    }
+                                }).catch(()=>{});
+                            }
+                        }, 0);
+                    }
+                    
+                    return `<img id="${uniqueId}" src="${src}" style="width: 100px; height: 100px; object-fit: contain; vertical-align: middle; background: transparent;" alt="${found.name || emojiName || '表情'}">`;
+                }
+                return match;
+            });
+            
+            // 如果只有表情没有其他文字，去掉气泡背景
+            const textWithoutEmoji = text.replace(emojiRegex, '').trim();
+            if (textWithoutEmoji === '') {
+                bubbleClass = 'chat-bubble';
+                colorStyleStr = 'padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important;';
+            }
+        }
+
         if (text.match(imageRegex)) {
             displayText = text.replace(imageRegex, (match, imageText) => this.renderImageBubble(imageText));
             bubbleClass = 'chat-bubble';

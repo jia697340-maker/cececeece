@@ -58,7 +58,7 @@ window.SystemApps['worldbook'] = {
                         </div>
                         
                         <!-- 底部批量操作浮窗 -->
-                        <div id="wb-batch-bar" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(249, 249, 251, 0.95); backdrop-filter: blur(8px); border-top: 1px solid rgba(228, 228, 231, 0.6); padding: 16px 24px; justify-content: space-between; align-items: center; z-index: 50;">
+                        <div id="wb-batch-bar" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(249, 249, 251, 0.95); border-top: 1px solid rgba(228, 228, 231, 0.6); padding: 16px 24px; justify-content: space-between; align-items: center; z-index: 50;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <button id="wb-batch-select-all" class="minimal-btn">全选</button>
                                 <span id="wb-batch-count" style="font-size: 13px; color: #52525b;">已选 0 项</span>
