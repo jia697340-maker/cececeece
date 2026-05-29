@@ -23,9 +23,13 @@ window.SystemApps['chat'] = {
         const btnMsgDelete = container.querySelector('#btn-msg-delete');
         const btnMsgSelect = container.querySelector('#btn-msg-select');
         
-        // 多选模式状态
+        // 消息多选模式状态
         let isMessageSelectMode = false;
         let selectedMessageIndices = new Set();
+        
+        // 会话多选模式状态
+        let isSessionSelectMode = false;
+        let selectedSessionIds = new Set();
         
         const chatComposerArea = container.querySelector('.chat-composer-area');
         const chatMessageSelectBar = container.querySelector('#chat-message-select-bar');
@@ -34,6 +38,298 @@ window.SystemApps['chat'] = {
         const btnSelectBarAll = container.querySelector('#btn-select-bar-all');
         const convMessagesNode = container.querySelector('#chat-conv-messages');
         
+        const chatSessionSelectBar = container.querySelector('#chat-session-select-bar');
+        const btnSessionSelectCancel = container.querySelector('#btn-session-select-cancel');
+        const btnSessionSelectDelete = container.querySelector('#btn-session-select-delete');
+        const btnSessionSelectPin = container.querySelector('#btn-session-select-pin');
+        const btnSessionSelectUnpin = container.querySelector('#btn-session-select-unpin');
+        const btnSessionSelectAll = container.querySelector('#btn-session-select-all');
+        const chatListContainer = container.querySelector('#chat-list-container');
+        
+        // 会话长按菜单
+        const sessionMenuOverlay = container.querySelector('#chat-session-menu-overlay');
+        const btnSessionMenuPin = container.querySelector('#btn-session-pin');
+        const btnSessionMenuUnpin = container.querySelector('#btn-session-unpin');
+        const btnSessionMenuDelete = container.querySelector('#btn-session-delete');
+        const btnSessionMenuSelect = container.querySelector('#btn-session-select');
+        let activeSessionForMenu = null;
+
+        const updateSessionSelectBarUI = () => {
+            const allItems = chatListContainer.querySelectorAll('.chat-list-item-wrapper');
+            const totalSessions = allItems.length;
+            
+            if (btnSessionSelectDelete) {
+                btnSessionSelectDelete.textContent = `删除(${selectedSessionIds.size})`;
+                btnSessionSelectDelete.disabled = selectedSessionIds.size === 0;
+            }
+            
+            // 检查选中的会话中是否全是置顶/未置顶
+            let allPinned = true;
+            let anyPinned = false;
+            
+            selectedSessionIds.forEach(id => {
+                let isPinned = false;
+                if (!String(id).startsWith('char_')) {
+                    const item = initialMessages.find(m => m.id === parseInt(id));
+                    if (item && item.isPinned) isPinned = true;
+                } else {
+                    const chars = loadCharacters();
+                    const item = chars.find(c => c.id === id);
+                    if (item && item.isPinned) isPinned = true;
+                }
+                if (isPinned) anyPinned = true;
+                if (!isPinned) allPinned = false;
+            });
+            
+            if (btnSessionSelectPin && btnSessionSelectUnpin) {
+                if (selectedSessionIds.size === 0) {
+                    btnSessionSelectPin.style.display = 'block';
+                    btnSessionSelectUnpin.style.display = 'none';
+                    btnSessionSelectPin.textContent = '置顶(0)';
+                    btnSessionSelectPin.disabled = true;
+                } else if (allPinned) {
+                    btnSessionSelectPin.style.display = 'none';
+                    btnSessionSelectUnpin.style.display = 'block';
+                    btnSessionSelectUnpin.textContent = `取消置顶(${selectedSessionIds.size})`;
+                    btnSessionSelectUnpin.disabled = false;
+                } else {
+                    btnSessionSelectPin.style.display = 'block';
+                    btnSessionSelectUnpin.style.display = 'none';
+                    btnSessionSelectPin.textContent = `置顶(${selectedSessionIds.size})`;
+                    btnSessionSelectPin.disabled = false;
+                }
+            }
+
+            if (btnSessionSelectAll) {
+                if (selectedSessionIds.size > 0 && selectedSessionIds.size === totalSessions) {
+                    btnSessionSelectAll.textContent = '取消全选';
+                } else {
+                    btnSessionSelectAll.textContent = '全选';
+                }
+            }
+            
+            // 更新每一行的选中状态
+            allItems.forEach(wrapper => {
+                const item = wrapper.querySelector('.chat-list-item');
+                const idAttr = wrapper.getAttribute('data-id');
+                if (idAttr) {
+                    const cb = item.querySelector('.session-checkbox');
+                    if (selectedSessionIds.has(idAttr)) {
+                        item.classList.add('selected');
+                        if (cb) cb.innerHTML = '<i class="ph-bold ph-check"></i>';
+                    } else {
+                        item.classList.remove('selected');
+                        if (cb) cb.innerHTML = '';
+                    }
+                }
+            });
+        };
+
+        const exitSessionSelectMode = () => {
+            isSessionSelectMode = false;
+            selectedSessionIds.clear();
+            if (chatSessionSelectBar) chatSessionSelectBar.classList.remove('active');
+            if (chatListContainer) {
+                chatListContainer.classList.remove('select-mode');
+                const allItems = chatListContainer.querySelectorAll('.chat-list-item-wrapper');
+                allItems.forEach(wrapper => {
+                    const item = wrapper.querySelector('.chat-list-item');
+                    item.classList.remove('selected');
+                    const cb = item.querySelector('.session-checkbox');
+                    if (cb) cb.innerHTML = '';
+                });
+            }
+        };
+
+        if (btnSessionSelectCancel) {
+            btnSessionSelectCancel.addEventListener('click', exitSessionSelectMode);
+        }
+
+        if (btnSessionSelectAll) {
+            btnSessionSelectAll.addEventListener('click', () => {
+                const allItems = chatListContainer.querySelectorAll('.chat-list-item-wrapper');
+                if (selectedSessionIds.size === allItems.length) {
+                    selectedSessionIds.clear();
+                } else {
+                    allItems.forEach(wrapper => {
+                        const idAttr = wrapper.getAttribute('data-id');
+                        if (idAttr) selectedSessionIds.add(idAttr);
+                    });
+                }
+                updateSessionSelectBarUI();
+            });
+        }
+        
+        const setSessionPinned = (idAttr, isPinned) => {
+             if (String(idAttr).startsWith('char_')) {
+                 let chars = loadCharacters();
+                 const index = chars.findIndex(c => c.id === idAttr);
+                 if (index !== -1) {
+                     chars[index].isPinned = isPinned;
+                     chars[index].pinTime = isPinned ? Date.now() : 0;
+                     saveCharacters(chars);
+                 }
+             } else {
+                 const id = parseInt(idAttr);
+                 const item = initialMessages.find(m => m.id === id);
+                 if (item) {
+                     item.isPinned = isPinned;
+                     item.pinTime = isPinned ? Date.now() : 0;
+                 }
+             }
+        };
+
+        if (btnSessionSelectPin) {
+            btnSessionSelectPin.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                selectedSessionIds.forEach(idAttr => {
+                    setSessionPinned(idAttr, true);
+                });
+                exitSessionSelectMode();
+                renderChatList();
+            });
+        }
+        
+        if (btnSessionSelectUnpin) {
+            btnSessionSelectUnpin.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                selectedSessionIds.forEach(idAttr => {
+                    setSessionPinned(idAttr, false);
+                });
+                exitSessionSelectMode();
+                renderChatList();
+            });
+        }
+
+        if (btnSessionSelectDelete) {
+            btnSessionSelectDelete.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                if (typeof showChatConfirm === 'function') {
+                    showChatConfirm('批量删除会话', `确定要删除选中的 ${selectedSessionIds.size} 个会话吗？删除后不可恢复。`, async () => {
+                        let chars = loadCharacters();
+                        let charsChanged = false;
+                        
+                        for (let idAttr of selectedSessionIds) {
+                            if (String(idAttr).startsWith('char_')) {
+                                chars = chars.filter(c => c.id !== idAttr);
+                                charsChanged = true;
+                                if (window.ImageStorageManager) {
+                                    await window.ImageStorageManager.deleteFromIndexedDB(`character-avatar-${idAttr}`);
+                                }
+                            } else {
+                                const id = parseInt(idAttr);
+                                initialMessages = initialMessages.filter(m => m.id !== id);
+                            }
+                        }
+                        
+                        if (charsChanged) {
+                            saveCharacters(chars);
+                        }
+                        
+                        exitSessionSelectMode();
+                        renderChatList();
+                    });
+                }
+            });
+        }
+
+        const closeSessionMenu = () => {
+            if (sessionMenuOverlay) sessionMenuOverlay.style.display = 'none';
+            activeSessionForMenu = null;
+        };
+
+        if (sessionMenuOverlay) {
+            sessionMenuOverlay.addEventListener('click', (e) => {
+                if (e.target === sessionMenuOverlay) {
+                    closeSessionMenu();
+                }
+            });
+            sessionMenuOverlay.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                closeSessionMenu();
+            });
+        }
+
+        if (btnSessionMenuSelect) {
+            btnSessionMenuSelect.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                
+                isSessionSelectMode = true;
+                selectedSessionIds.clear();
+                selectedSessionIds.add(activeSessionForMenu.id);
+                
+                if (chatSessionSelectBar) chatSessionSelectBar.classList.add('active');
+                if (chatListContainer) chatListContainer.classList.add('select-mode');
+                
+                updateSessionSelectBarUI();
+                closeSessionMenu();
+            });
+        }
+
+        if (btnSessionMenuDelete) {
+            btnSessionMenuDelete.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                const idAttr = activeSessionForMenu.id;
+                
+                showChatConfirm('删除记录', '确定要删除此聊天记录吗？', async () => {
+                    if (String(idAttr).startsWith('char_')) {
+                        let chars = loadCharacters();
+                        chars = chars.filter(c => c.id !== idAttr);
+                        saveCharacters(chars);
+                        if (window.ImageStorageManager) {
+                            await window.ImageStorageManager.deleteFromIndexedDB(`character-avatar-${idAttr}`);
+                        }
+                    } else {
+                        const id = parseInt(idAttr);
+                        initialMessages = initialMessages.filter(m => m.id !== id);
+                    }
+                    renderChatList();
+                });
+                closeSessionMenu();
+            });
+        }
+        
+        if (btnSessionMenuPin) {
+            btnSessionMenuPin.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                setSessionPinned(activeSessionForMenu.id, true);
+                renderChatList();
+                closeSessionMenu();
+            });
+        }
+
+        if (btnSessionMenuUnpin) {
+            btnSessionMenuUnpin.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                setSessionPinned(activeSessionForMenu.id, false);
+                renderChatList();
+                closeSessionMenu();
+            });
+        }
+
+        const showSessionMenu = (e, msgObj, idAttr) => {
+            e.preventDefault();
+            if (isSessionSelectMode) return;
+            activeSessionForMenu = { msgObj, id: idAttr };
+            
+            let isPinned = false;
+            if (msgObj && msgObj.rawCharData && msgObj.rawCharData.isPinned) {
+                isPinned = true;
+            } else if (msgObj && msgObj.isPinned) {
+                isPinned = true;
+            }
+
+            if (isPinned) {
+                btnSessionMenuPin.style.display = 'none';
+                btnSessionMenuUnpin.style.display = 'flex';
+            } else {
+                btnSessionMenuPin.style.display = 'flex';
+                btnSessionMenuUnpin.style.display = 'none';
+            }
+
+            sessionMenuOverlay.style.display = 'flex';
+        };
+
         const updateSelectBarUI = () => {
             if (!currentPersona) return;
             const history = getChatHistory(currentPersona.id);
@@ -268,6 +564,7 @@ window.SystemApps['chat'] = {
                     quoteName.textContent = senderName;
                     
                     let previewText = plainText;
+                    previewText = previewText.replace(/\[\[EMOJI:[^|\]]+\|([^\]]+)\]\]/g, '[$1]').replace(/\[\[EMOJI:[^\]]+\]\]/g, '[表情]');
                     if (previewText.includes('[[IMAGE:')) previewText = '[图片]';
                     else if (previewText.includes('[[VOICE:')) previewText = '[语音]';
                     else if (previewText.includes('[[LOCATION:')) previewText = '[位置]';
@@ -584,11 +881,30 @@ window.SystemApps['chat'] = {
             });
         }
 
-        const showChatPrompt = (title, defaultValue, onConfirm, showSecondary = false, secondaryPlaceholder = '') => {
+        const showChatPrompt = (title, defaultValue, onConfirm, showSecondary = false, secondaryPlaceholder = '', isSingleLine = false, mainPlaceholder = '') => {
             togglePromptExpand(false); // 每次打开重置为小窗
+
+            if (btnPromptExpand) {
+                btnPromptExpand.style.display = isSingleLine ? 'none' : 'flex';
+            }
 
             if (chatPromptTitle) chatPromptTitle.textContent = title || '输入';
             if (chatPromptInput) {
+                if (isSingleLine) {
+                    chatPromptInput.style.minHeight = '44px';
+                    chatPromptInput.style.height = '44px';
+                    chatPromptInput.style.resize = 'none';
+                    chatPromptInput.style.lineHeight = '24px';
+                    chatPromptInput.style.flex = 'none';
+                } else {
+                    chatPromptInput.style.minHeight = '80px';
+                    chatPromptInput.style.height = 'auto';
+                    chatPromptInput.style.resize = 'vertical';
+                    chatPromptInput.style.lineHeight = '1.5';
+                    chatPromptInput.style.flex = '1';
+                }
+                
+                chatPromptInput.placeholder = mainPlaceholder || '';
                 chatPromptInput.value = defaultValue || '';
                 // 延迟获得焦点
                 setTimeout(() => chatPromptInput.focus(), 100);
@@ -733,12 +1049,13 @@ window.SystemApps['chat'] = {
             });
         }
 
-                const closePopups = () => {
+        const closePopups = () => {
             // 注意：不包含 popupTimezoneHelp，它有自己独立的关闭逻辑
             [popupLibrary, popupEdit, popupView, popupCreate, popupCharacterType, popupCharacterEdit, popupCharacterSettings, chatAlertPopup, chatConfirmPopup, chatPromptPopup,
              container.querySelector('#memory-library-popup'), container.querySelector('#memory-edit-popup'), container.querySelector('#chat-transfer-action-popup'),
              container.querySelector('#chat-timezone-popup'), container.querySelector('#cs-avatar-shape-popup'),
-             container.querySelector('#chat-emoji-manage-popup'), container.querySelector('#chat-emoji-single-popup'), container.querySelector('#chat-emoji-batch-popup')].forEach(p => {
+                container.querySelector('#chat-emoji-manage-popup'), container.querySelector('#chat-emoji-single-popup'), container.querySelector('#chat-emoji-batch-popup'), container.querySelector('#chat-emoji-group-action-popup'),
+                container.querySelector('#chat-char-emoji-manage-popup'), container.querySelector('#chat-char-emoji-single-popup'), container.querySelector('#chat-char-emoji-batch-popup'), container.querySelector('#chat-char-emoji-group-action-popup')].forEach(p => {
                 if (p) p.classList.remove('active');
             });
             // 退出管理模式
@@ -751,6 +1068,16 @@ window.SystemApps['chat'] = {
         // 统一关闭主弹窗
         container.querySelectorAll('.btn-close-popup').forEach(btn => {
             btn.addEventListener('click', closePopups);
+        });
+
+        // 独立关闭表情包子弹窗（保留底层的管理弹窗）
+        container.querySelectorAll('.btn-close-emoji-sub, .btn-close-char-emoji-sub').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const subPopup = e.target.closest('.chat-popup-overlay');
+                if (subPopup) {
+                    subPopup.classList.remove('active');
+                }
+            });
         });
 
         // 独立关闭帮助教程弹窗
@@ -1386,6 +1713,9 @@ window.SystemApps['chat'] = {
         const loadCharacters = window.ChatStorage.loadCharacters;
         const saveCharacters = window.ChatStorage.saveCharacters;
 
+        const loadCharEmojiGroups = window.ChatStorage.loadCharEmojiGroups;
+        const saveCharEmojiGroups = window.ChatStorage.saveCharEmojiGroups;
+
         const openCharacterEdit = (char = null, existingAvatarUrl = null) => {
             if (char) {
                 editingCharacterId = char.id;
@@ -1910,7 +2240,7 @@ window.SystemApps['chat'] = {
         });
 
         // --- 渲染聊天列表 ---
-        const chatListContainer = container.querySelector('#chat-list-container');
+        // chatListContainer already defined at the top
         
         const updateTotalUnreadBadge = () => {
             let total = 0;
@@ -1999,6 +2329,9 @@ window.SystemApps['chat'] = {
                     lastMessageContent = lastMessageContent.replace(quoteRegex, '').trim();
                 }
                 
+                // 处理列表预览中表情消息的显示
+                lastMessageContent = lastMessageContent.replace(/\[\[EMOJI:[^|\]]+\|([^\]]+)\]\]/g, '[$1]').replace(/\[\[EMOJI:[^\]]+\]\]/g, '[表情]');
+
                 // 处理列表预览中转账消息的显示
                 const transferRegex = /\[\[TRANSFER:([^|]+)\|(.*?)\]\]/g;
                 if (transferRegex.test(lastMessageContent)) {
@@ -2036,7 +2369,9 @@ window.SystemApps['chat'] = {
                     textColor: '#333',
                     avatarUrl: avatarUrl,
                     isCharacter: true,
-                    rawCharData: char
+                    rawCharData: char,
+                    isPinned: char.isPinned,
+                    pinTime: char.pinTime || 0
                 });
             }
 
@@ -2049,22 +2384,41 @@ window.SystemApps['chat'] = {
                     );
                 }
             }
+            
+            // 排序逻辑：置顶的排在前面，且按 pinTime 降序；未置顶的保持原顺序（或按其他逻辑）
+            displayList.sort((a, b) => {
+                const aPinned = a.isPinned || (a.rawCharData && a.rawCharData.isPinned);
+                const bPinned = b.isPinned || (b.rawCharData && b.rawCharData.isPinned);
+                
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                
+                if (aPinned && bPinned) {
+                    const aTime = a.pinTime || (a.rawCharData && a.rawCharData.pinTime) || 0;
+                    const bTime = b.pinTime || (b.rawCharData && b.rawCharData.pinTime) || 0;
+                    return bTime - aTime;
+                }
+                return 0; // 维持原有顺序
+            });
 
             displayList.forEach(msg => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chat-list-item-wrapper';
+                wrapper.setAttribute('data-id', msg.id);
                 
-                // Actions background
-                const actions = document.createElement('div');
-                actions.className = 'chat-list-actions';
-                actions.innerHTML = `
-                    <button class="chat-action-btn pin" data-id="${msg.id}">置顶</button>
-                    <button class="chat-action-btn delete" data-id="${msg.id}">删除</button>
-                `;
+                const isPinned = msg.isPinned || (msg.rawCharData && msg.rawCharData.isPinned);
+                if (isPinned) {
+                    wrapper.classList.add('pinned');
+                }
                 
                 // Foreground item
                 const item = document.createElement('div');
                 item.className = 'chat-list-item';
+                
+                // checkbox for multi-select
+                const checkboxHtml = `
+                    <div class="session-checkbox"></div>
+                `;
                 
                 const onlineHtml = msg.isOnline ? '<div class="chat-item-online"></div>' : '';
                 const unreadTimeClass = msg.isUnread ? 'unread' : 'read';
@@ -2077,6 +2431,7 @@ window.SystemApps['chat'] = {
                 }
 
                 item.innerHTML = `
+                    ${checkboxHtml}
                     <div class="chat-item-avatar" style="background-color: ${msg.color}; color: ${msg.textColor};">
                         ${avatarInnerHtml}
                     </div>
@@ -2092,12 +2447,21 @@ window.SystemApps['chat'] = {
                     </div>
                 `;
                 
-                wrapper.appendChild(actions);
                 wrapper.appendChild(item);
                 fragment.appendChild(wrapper);
                 
                 // 绑定点击事件进入对话
-                item.addEventListener('click', () => {
+                item.addEventListener('click', (e) => {
+                    if (isSessionSelectMode) {
+                        if (selectedSessionIds.has(String(msg.id))) {
+                            selectedSessionIds.delete(String(msg.id));
+                        } else {
+                            selectedSessionIds.add(String(msg.id));
+                        }
+                        updateSessionSelectBarUI();
+                        return;
+                    }
+
                     if (msg.isUnread) {
                         msg.isUnread = false;
                         msg.unreadCount = 0;
@@ -2123,105 +2487,51 @@ window.SystemApps['chat'] = {
                     openConversation(msg);
                 });
                 
-                // 绑定移动端滑动逻辑 (Touch events)
-                let startX = 0;
-                let currentX = 0;
-                let isSwiping = false;
+                // 绑定长按事件
+                let pressTimer = null;
+                let isDragging = false;
                 
+                const clearPressTimer = () => {
+                    if (pressTimer) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+                };
+
                 item.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX;
-                    isSwiping = true;
-                    item.style.transition = 'none';
+                    isDragging = false;
+                    clearPressTimer();
+                    pressTimer = setTimeout(() => {
+                        if (!isDragging) {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            showSessionMenu(e, msg, msg.id);
+                        }
+                    }, 500);
                 }, { passive: true });
-                
-                item.addEventListener('touchmove', (e) => {
-                    if (!isSwiping) return;
-                    currentX = e.touches[0].clientX;
-                    const diffX = currentX - startX;
-                    if (diffX < 0 && diffX > -180) {
-                        item.style.transform = `translateX(${diffX}px)`;
-                    }
-                }, { passive: true });
-                
-                item.addEventListener('touchend', () => {
-                    if (!isSwiping) return;
-                    isSwiping = false;
-                    item.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                    const diffX = currentX - startX;
-                    if (diffX < -50) {
-                        item.style.transform = 'translateX(-160px)'; // 保持打开状态显示按钮
-                    } else {
-                        item.style.transform = 'translateX(0)';
-                    }
-                });
 
-                // 绑定PC端右键点击逻辑 (Context Menu)
+                item.addEventListener('touchmove', () => {
+                    isDragging = true;
+                    clearPressTimer();
+                }, { passive: true });
+
+                item.addEventListener('touchend', () => { clearPressTimer(); });
+                item.addEventListener('touchcancel', () => { clearPressTimer(); });
+
                 item.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    // 如果已经划开，右键则关闭；如果没划开，右键则划开
-                    if (item.style.transform === 'translateX(-160px)') {
-                        item.style.transform = 'translateX(0)';
-                    } else {
-                        // 先把其他打开的项收起
-                        const allItems = chatListContainer.querySelectorAll('.chat-list-item');
-                        allItems.forEach(el => {
-                            if (el !== item) el.style.transform = 'translateX(0)';
-                        });
-                        item.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                        item.style.transform = 'translateX(-160px)';
-                    }
+                    showSessionMenu(e, msg, msg.id);
                 });
 
-                // 点击其他地方收起滑动菜单
-                document.addEventListener('click', (e) => {
-                    if (!item.contains(e.target) && item.style.transform === 'translateX(-160px)') {
-                        item.style.transform = 'translateX(0)';
-                    }
-                });
             });
             
-            // 绑定置顶和删除事件
             // 将片段一次性插入 DOM
             chatListContainer.innerHTML = '';
             chatListContainer.appendChild(fragment);
+            
+            // 如果在多选模式下，恢复选中状态
+            if (isSessionSelectMode) {
+                updateSessionSelectBarUI();
+            }
 
-            chatListContainer.querySelectorAll('.chat-action-btn.delete').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const idAttr = btn.getAttribute('data-id');
-                    showChatConfirm('删除记录', '确定要删除此聊天记录吗？', async () => {
-                        if (String(idAttr).startsWith('char_')) {
-                            let chars = loadCharacters();
-                            chars = chars.filter(c => c.id !== idAttr);
-                            saveCharacters(chars);
-                            if (window.ImageStorageManager) {
-                                await window.ImageStorageManager.deleteFromIndexedDB(`character-avatar-${idAttr}`);
-                            }
-                        } else {
-                            const id = parseInt(idAttr);
-                            initialMessages = initialMessages.filter(m => m.id !== id);
-                        }
-                        renderChatList();
-                    });
-                });
-            });
-            
-            chatListContainer.querySelectorAll('.chat-action-btn.pin').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const idAttr = btn.getAttribute('data-id');
-                    if (!String(idAttr).startsWith('char_')) {
-                        const id = parseInt(idAttr);
-                        const item = initialMessages.find(m => m.id === id);
-                        if (item) {
-                            initialMessages = initialMessages.filter(m => m.id !== id);
-                            initialMessages.unshift(item);
-                            renderChatList();
-                        }
-                    }
-                });
-            });
-            
             updateTotalUnreadBadge();
             chatListContainer.dataset.rendering = 'false';
         };
@@ -2633,6 +2943,18 @@ window.SystemApps['chat'] = {
             });
         }
 
+        // 角色专属表情包加载和保存
+        const loadCharEmojis = () => {
+            try {
+                let emojis = JSON.parse(localStorage.getItem('nrj-char-emojis') || '[]');
+                return emojis;
+            } catch(e) { return []; }
+        };
+
+        const saveCharEmojis = (emojis) => {
+            localStorage.setItem('nrj-char-emojis', JSON.stringify(emojis));
+        };
+
         const btnManageEmojis = container.querySelector('#btn-manage-emojis');
         const popupEmojiManage = container.querySelector('#chat-emoji-manage-popup');
         const popupEmojiSingle = container.querySelector('#chat-emoji-single-popup');
@@ -2758,6 +3080,701 @@ window.SystemApps['chat'] = {
             });
         }
 
+        // 角色表情包管理逻辑
+        const btnManageCharEmojis = container.querySelector('#btn-manage-char-emojis');
+        const popupCharEmojiManage = container.querySelector('#chat-char-emoji-manage-popup');
+        const popupCharEmojiSingle = container.querySelector('#chat-char-emoji-single-popup');
+        const popupCharEmojiBatch = container.querySelector('#chat-char-emoji-batch-popup');
+
+        let selectedCharEmojiIds = new Set();
+        let isCharEmojiMultiSelectMode = false;
+        let currentCharEmojiManageSearchKey = '';
+        let editingCharEmojiId = null;
+        let currentCharEmojiManageGroupId = 'all';
+
+        const btnManageCharEmojisMulti = container.querySelector('#btn-manage-char-emojis-multi');
+        const charEmojiManageFooter = container.querySelector('#char-emoji-manage-footer');
+        const btnSelectAllCharEmojis = container.querySelector('#btn-select-all-char-emojis');
+        const btnDeleteSelectedCharEmojis = container.querySelector('#btn-delete-selected-char-emojis');
+        const inputCharEmojiManageSearch = container.querySelector('#char-emoji-manage-search');
+        
+        const updateCharEmojiManageFooter = () => {
+            let emojis = loadCharEmojis();
+            if (currentCharEmojiManageGroupId !== 'all') {
+                emojis = emojis.filter(e => e.groupId === currentCharEmojiManageGroupId);
+            }
+            if (currentCharEmojiManageSearchKey) {
+                const keyword = currentCharEmojiManageSearchKey.toLowerCase();
+                emojis = emojis.filter(e => (e.name && e.name.toLowerCase().includes(keyword)));
+            }
+
+            if (isCharEmojiMultiSelectMode) {
+                if (charEmojiManageFooter) charEmojiManageFooter.style.display = 'flex';
+                if (btnManageCharEmojisMulti) btnManageCharEmojisMulti.textContent = '取消';
+                if (btnDeleteSelectedCharEmojis) {
+                    btnDeleteSelectedCharEmojis.textContent = `删除 (${selectedCharEmojiIds.size})`;
+                    btnDeleteSelectedCharEmojis.disabled = selectedCharEmojiIds.size === 0;
+                }
+                const btnMoveSelectedCharEmojis = container.querySelector('#btn-move-selected-char-emojis');
+                if (btnMoveSelectedCharEmojis) {
+                    btnMoveSelectedCharEmojis.textContent = `移动 (${selectedCharEmojiIds.size})`;
+                    btnMoveSelectedCharEmojis.disabled = selectedCharEmojiIds.size === 0;
+                }
+
+                if (emojis.length > 0 && selectedCharEmojiIds.size === emojis.length) {
+                    if (btnSelectAllCharEmojis) btnSelectAllCharEmojis.textContent = '取消全选';
+                } else {
+                    if (btnSelectAllCharEmojis) btnSelectAllCharEmojis.textContent = '全选当前';
+                }
+            } else {
+                if (charEmojiManageFooter) charEmojiManageFooter.style.display = 'none';
+                if (btnManageCharEmojisMulti) btnManageCharEmojisMulti.textContent = '多选';
+            }
+        };
+
+        const renderCharEmojiManageGroups = () => {
+            const groupList = container.querySelector('#char-emoji-manage-groups');
+            if (!groupList) return;
+            groupList.innerHTML = '';
+            
+            const groups = loadCharEmojiGroups();
+            const allGroups = [{ id: 'all', name: '全部' }, { id: 'default', name: '默认分组' }, ...groups];
+            
+            allGroups.forEach(g => {
+                const el = document.createElement('div');
+                const isActive = currentCharEmojiManageGroupId === g.id;
+                el.style.cssText = `padding: 10px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center;`;
+                if (isActive) {
+                    el.style.background = 'rgba(0,0,0,0.06)';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#18181b';
+                } else {
+                    el.style.background = 'transparent';
+                    el.style.fontWeight = 'normal';
+                    el.style.color = '#52525b';
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = g.name;
+                nameSpan.style.flex = '1';
+                nameSpan.style.overflow = 'hidden';
+                nameSpan.style.textOverflow = 'ellipsis';
+                el.appendChild(nameSpan);
+                
+                el.onclick = (e) => {
+                    if (e.target.closest('.group-action')) return;
+                    currentCharEmojiManageGroupId = g.id;
+                    isCharEmojiMultiSelectMode = false;
+                    selectedCharEmojiIds.clear();
+                    renderCharEmojiManageGroups();
+                    renderCharEmojiManageList();
+                    updateCharEmojiManageFooter();
+                };
+                
+                groupList.appendChild(el);
+            });
+        };
+
+        const openCharEmojiEdit = async (emoji = null) => {
+            const charSingleTitle = container.querySelector('#char-emoji-single-title');
+            const charSingleName = container.querySelector('#char-emoji-single-name');
+            const charSingleGroup = container.querySelector('#char-emoji-single-group');
+            const charSingleUrl = container.querySelector('#char-emoji-single-url');
+            const charSinglePreviewBox = container.querySelector('#char-emoji-single-preview-container');
+            const charSinglePreviewImg = container.querySelector('#char-emoji-single-preview');
+
+            // 填充下拉选项
+            if (charSingleGroup) {
+                charSingleGroup.innerHTML = '';
+                const groups = loadCharEmojiGroups();
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = g.name;
+                    charSingleGroup.appendChild(opt);
+                });
+            }
+
+            if (emoji) {
+                editingCharEmojiId = emoji.id;
+                if (charSingleTitle) charSingleTitle.textContent = '编辑角色表情';
+                if (charSingleName) charSingleName.value = emoji.name || '';
+                if (charSingleGroup) charSingleGroup.value = emoji.groupId || 'default';
+                
+                if (emoji.type === 'local') {
+                    if (charSingleUrl) charSingleUrl.value = '';
+                    try {
+                        const base64 = await window.ImageStorageManager.loadFromIndexedDB(emoji.id);
+                        if (base64) {
+                            currentCharSingleBase64 = base64;
+                            if (charSinglePreviewImg) charSinglePreviewImg.src = base64;
+                            if (charSinglePreviewBox) charSinglePreviewBox.style.display = 'block';
+                        }
+                    } catch(e) {}
+                } else {
+                    if (charSingleUrl) charSingleUrl.value = emoji.url || '';
+                    currentCharSingleBase64 = null;
+                    if (emoji.url) {
+                        if (charSinglePreviewImg) charSinglePreviewImg.src = emoji.url;
+                        if (charSinglePreviewBox) charSinglePreviewBox.style.display = 'block';
+                    } else {
+                        if (charSinglePreviewBox) charSinglePreviewBox.style.display = 'none';
+                    }
+                }
+            } else {
+                editingCharEmojiId = null;
+                if (charSingleTitle) charSingleTitle.textContent = '添加角色表情';
+                if (charSingleName) charSingleName.value = '';
+                if (charSingleGroup) charSingleGroup.value = currentCharEmojiManageGroupId !== 'all' ? currentCharEmojiManageGroupId : 'default';
+                if (charSingleUrl) charSingleUrl.value = '';
+                currentCharSingleBase64 = null;
+                if (charSinglePreviewBox) charSinglePreviewBox.style.display = 'none';
+            }
+            if (popupCharEmojiSingle) popupCharEmojiSingle.classList.add('active');
+        };
+
+        const renderCharEmojiManageList = () => {
+            const list = container.querySelector('#char-emoji-manage-list');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            let emojis = loadCharEmojis();
+            
+            if (currentCharEmojiManageSearchKey) {
+                const keyword = currentCharEmojiManageSearchKey.toLowerCase();
+                emojis = emojis.filter(e => (e.name && e.name.toLowerCase().includes(keyword)));
+            }
+            
+            if (emojis.length === 0) {
+                list.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-secondary); font-size: 13px; padding: 40px 0;">空空如也</div>';
+                return;
+            }
+            
+            emojis.forEach(emoji => {
+                const el = document.createElement('div');
+                let isChecked = isCharEmojiMultiSelectMode && selectedCharEmojiIds.has(emoji.id);
+                el.style.cssText = `width: 64px; height: 64px; flex-shrink: 0; border-radius: 8px; overflow: hidden; background: #f4f4f5; position: relative; border: 2px solid ${isChecked ? 'var(--accent-color, #18181b)' : 'var(--border-color)'}; box-sizing: border-box; transition: all 0.2s ease;`;
+                
+                if (isCharEmojiMultiSelectMode) {
+                    const checkIcon = document.createElement('div');
+                    checkIcon.style.cssText = `position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 4px; background: ${isChecked ? 'var(--accent-color, #18181b)' : 'rgba(0,0,0,0.2)'}; color: white; display: flex; align-items: center; justify-content: center; z-index: 10;`;
+                    if (isChecked) {
+                        checkIcon.innerHTML = '<i class="ph-bold ph-check" style="font-size: 10px;"></i>';
+                    }
+                    el.appendChild(checkIcon);
+                }
+
+                const img = document.createElement('img');
+                img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; pointer-events: none;';
+                img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                
+                const getImgSrc = async () => {
+                    if (emoji.type === 'local' && window.ImageStorageManager) {
+                        try {
+                            const data = await window.ImageStorageManager.loadFromIndexedDB(emoji.id);
+                            if (data) return data;
+                        } catch(e) {}
+                    }
+                    return emoji.url;
+                };
+                
+                getImgSrc().then(src => { img.src = src || img.src; });
+                el.appendChild(img);
+                
+                if (emoji.name) {
+                    const nameTag = document.createElement('div');
+                    nameTag.style.cssText = 'position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: #fff; font-size: 10px; padding: 2px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;';
+                    nameTag.textContent = emoji.name;
+                    el.appendChild(nameTag);
+                }
+                
+                el.style.cursor = 'pointer';
+                el.onclick = (e) => {
+                    if (e.target.closest('button')) return; // 防止点到删除按钮
+                    if (isCharEmojiMultiSelectMode) {
+                        if (selectedCharEmojiIds.has(emoji.id)) {
+                            selectedCharEmojiIds.delete(emoji.id);
+                        } else {
+                            selectedCharEmojiIds.add(emoji.id);
+                        }
+                        updateCharEmojiManageFooter();
+                        renderCharEmojiManageList();
+                    } else {
+                        openCharEmojiEdit(emoji);
+                    }
+                };
+
+                if (!isCharEmojiMultiSelectMode) {
+                    const delBtn = document.createElement('button');
+                    delBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: rgba(255,59,48,0.9); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 10;';
+                    delBtn.innerHTML = '<i class="ph ph-x"></i>';
+                    delBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        showChatConfirm('删除表情', '确定要删除这个角色表情吗？', async () => {
+                            let currentEmojis = loadCharEmojis();
+                            currentEmojis = currentEmojis.filter(e => e.id !== emoji.id);
+                            saveCharEmojis(currentEmojis);
+                            if (emoji.type === 'local' && window.ImageStorageManager) {
+                                await window.ImageStorageManager.deleteFromIndexedDB(emoji.id);
+                            }
+                            renderCharEmojiManageList();
+                        });
+                    };
+                    el.appendChild(delBtn);
+                }
+                
+                list.appendChild(el);
+            });
+        };
+
+        if (btnManageCharEmojisMulti) {
+            btnManageCharEmojisMulti.addEventListener('click', () => {
+                isCharEmojiMultiSelectMode = !isCharEmojiMultiSelectMode;
+                selectedCharEmojiIds.clear();
+                updateCharEmojiManageFooter();
+                renderCharEmojiManageList();
+            });
+        }
+
+        if (btnSelectAllCharEmojis) {
+            btnSelectAllCharEmojis.addEventListener('click', () => {
+                let emojis = loadCharEmojis();
+                if (currentCharEmojiManageSearchKey) {
+                    const keyword = currentCharEmojiManageSearchKey.toLowerCase();
+                    emojis = emojis.filter(e => (e.name && e.name.toLowerCase().includes(keyword)));
+                }
+
+                let allSelected = true;
+                emojis.forEach(e => {
+                    if (!selectedCharEmojiIds.has(e.id)) {
+                        allSelected = false;
+                    }
+                });
+
+                if (allSelected && emojis.length > 0) {
+                    emojis.forEach(e => selectedCharEmojiIds.delete(e.id));
+                } else {
+                    emojis.forEach(e => selectedCharEmojiIds.add(e.id));
+                }
+                updateCharEmojiManageFooter();
+                renderCharEmojiManageList();
+            });
+        }
+
+        if (btnDeleteSelectedCharEmojis) {
+            btnDeleteSelectedCharEmojis.addEventListener('click', async () => {
+                if (selectedCharEmojiIds.size === 0) return;
+                showChatConfirm('批量删除表情', `确定要删除选中的 ${selectedCharEmojiIds.size} 个角色表情吗？`, async () => {
+                    let currentEmojis = loadCharEmojis();
+                    
+                    const localIdsToDelete = [];
+                    currentEmojis.forEach(e => {
+                        if (selectedCharEmojiIds.has(e.id) && e.type === 'local') {
+                            localIdsToDelete.push(e.id);
+                        }
+                    });
+
+                    currentEmojis = currentEmojis.filter(e => !selectedCharEmojiIds.has(e.id));
+                    saveCharEmojis(currentEmojis);
+                    
+                    if (window.ImageStorageManager) {
+                        for (let id of localIdsToDelete) {
+                            try {
+                                await window.ImageStorageManager.deleteFromIndexedDB(id);
+                            } catch(e) {}
+                        }
+                    }
+                    
+                    selectedCharEmojiIds.clear();
+                    isCharEmojiMultiSelectMode = false;
+                    updateCharEmojiManageFooter();
+                    renderCharEmojiManageList();
+                    
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '已删除所选表情');
+                });
+            });
+        }
+
+        const btnAddCharEmojiGroup = container.querySelector('#btn-add-char-emoji-group');
+        if (btnAddCharEmojiGroup) {
+            btnAddCharEmojiGroup.addEventListener('click', () => {
+                showChatPrompt('新建角色表情分组', '', (name) => {
+                    if (name && name.trim()) {
+                        let groups = loadCharEmojiGroups();
+                        const newGroupId = 'char_group_' + Date.now();
+                        groups.push({ id: newGroupId, name: name.trim() });
+                        saveCharEmojiGroups(groups);
+                        
+                        currentCharEmojiManageGroupId = newGroupId;
+                        isCharEmojiMultiSelectMode = false;
+                        selectedCharEmojiIds.clear();
+                        renderCharEmojiManageGroups();
+                        renderCharEmojiManageList();
+                        updateCharEmojiManageFooter();
+                    }
+                }, false, '', true, '例如：专属表情');
+            });
+        }
+
+        const popupCharEmojiGroupAction = container.querySelector('#chat-char-emoji-group-action-popup');
+        const inputCharEmojiGroupName = container.querySelector('#char-emoji-group-action-name');
+        const btnCharEmojiGroupDelete = container.querySelector('#btn-char-emoji-group-delete');
+        const btnCharEmojiGroupSave = container.querySelector('#btn-char-emoji-group-save');
+        const selCharEmojiGroupTargetType = container.querySelector('#char-emoji-group-target-type');
+        const charEmojiGroupTargetCharsBox = container.querySelector('#char-emoji-group-target-chars');
+
+        if (selCharEmojiGroupTargetType && charEmojiGroupTargetCharsBox) {
+            selCharEmojiGroupTargetType.addEventListener('change', (e) => {
+                charEmojiGroupTargetCharsBox.style.display = e.target.value === 'specific' ? 'flex' : 'none';
+            });
+        }
+
+        const renderCharEmojiGroupTargetChars = (selectedChars = []) => {
+            if (!charEmojiGroupTargetCharsBox) return;
+            charEmojiGroupTargetCharsBox.innerHTML = '';
+            const allChars = loadCharacters();
+            if (allChars.length === 0) {
+                charEmojiGroupTargetCharsBox.innerHTML = '<span style="font-size: 12px; color: var(--text-secondary);">暂无角色，请先创建角色</span>';
+                return;
+            }
+            allChars.forEach(c => {
+                const label = document.createElement('label');
+                label.style.cssText = 'display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; padding: 4px 8px; background: #fff; border-radius: 6px; border: 1px solid var(--border-color);';
+                
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = c.id;
+                cb.checked = selectedChars.includes(c.id);
+                
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(c.nickname || c.realname || '未命名'));
+                charEmojiGroupTargetCharsBox.appendChild(label);
+            });
+        };
+
+        const btnManageCharGroupActions = container.querySelector('#btn-manage-char-group-actions');
+        if (btnManageCharGroupActions) {
+            btnManageCharGroupActions.addEventListener('click', () => {
+                if (currentCharEmojiManageGroupId === 'all') {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '【全部】不是真实的分组，无法操作。');
+                    return;
+                }
+                if (currentCharEmojiManageGroupId === 'default') {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '【默认分组】是系统内置的分组，无法修改或删除。');
+                    return;
+                }
+                
+                const groups = loadCharEmojiGroups();
+                const group = groups.find(g => g.id === currentCharEmojiManageGroupId);
+                if (!group) return;
+                
+                if (popupCharEmojiGroupAction && inputCharEmojiGroupName) {
+                    inputCharEmojiGroupName.value = group.name;
+                    if (selCharEmojiGroupTargetType) {
+                        selCharEmojiGroupTargetType.value = group.targetType || 'global';
+                        charEmojiGroupTargetCharsBox.style.display = selCharEmojiGroupTargetType.value === 'specific' ? 'flex' : 'none';
+                        renderCharEmojiGroupTargetChars(group.targetChars || []);
+                    }
+                    popupCharEmojiGroupAction.classList.add('active');
+                }
+            });
+        }
+
+        if (btnCharEmojiGroupDelete) {
+            btnCharEmojiGroupDelete.addEventListener('click', () => {
+                const groups = loadCharEmojiGroups();
+                const group = groups.find(g => g.id === currentCharEmojiManageGroupId);
+                if (!group) return;
+
+                showChatConfirm('确认删除', `确定要删除分组【${group.name}】吗？表情将移至默认分组。`, () => {
+                    let gs = loadCharEmojiGroups();
+                    gs = gs.filter(g => g.id !== currentCharEmojiManageGroupId);
+                    saveCharEmojiGroups(gs);
+                    
+                    let es = loadCharEmojis();
+                    es.forEach(e => {
+                        if (e.groupId === currentCharEmojiManageGroupId) {
+                            e.groupId = 'default';
+                        }
+                    });
+                    saveCharEmojis(es);
+                    
+                    currentCharEmojiManageGroupId = 'all';
+                    renderCharEmojiManageGroups();
+                    renderCharEmojiManageList();
+                    
+                    if (popupCharEmojiGroupAction) popupCharEmojiGroupAction.classList.remove('active');
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('已删除', '分组已删除。');
+                });
+            });
+        }
+
+        if (btnCharEmojiGroupSave) {
+            btnCharEmojiGroupSave.addEventListener('click', () => {
+                if (!inputCharEmojiGroupName) return;
+                const newName = inputCharEmojiGroupName.value.trim();
+                if (!newName) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '分组名称不能为空。');
+                    return;
+                }
+
+                let gs = loadCharEmojiGroups();
+                const idx = gs.findIndex(g => g.id === currentCharEmojiManageGroupId);
+                if (idx !== -1) {
+                    gs[idx].name = newName;
+                    
+                    if (selCharEmojiGroupTargetType) {
+                        gs[idx].targetType = selCharEmojiGroupTargetType.value;
+                        if (gs[idx].targetType === 'specific' && charEmojiGroupTargetCharsBox) {
+                            const cbs = charEmojiGroupTargetCharsBox.querySelectorAll('input[type="checkbox"]:checked');
+                            gs[idx].targetChars = Array.from(cbs).map(cb => cb.value);
+                        } else {
+                            gs[idx].targetChars = [];
+                        }
+                    }
+
+                    saveCharEmojiGroups(gs);
+                    renderCharEmojiManageGroups();
+                    
+                    if (popupCharEmojiGroupAction) popupCharEmojiGroupAction.classList.remove('active');
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('已保存', '分组信息保存成功。');
+                }
+            });
+        }
+
+        const btnAddCharEmojiSingle = container.querySelector('#btn-add-char-emoji-single');
+        if (btnAddCharEmojiSingle && popupCharEmojiSingle) {
+            btnAddCharEmojiSingle.addEventListener('click', () => {
+                openCharEmojiEdit(null);
+            });
+        }
+
+        let currentCharSingleBase64 = null;
+        const charSingleUrl = container.querySelector('#char-emoji-single-url');
+        const charSinglePreviewImg = container.querySelector('#char-emoji-single-preview');
+        const charSinglePreviewBox = container.querySelector('#char-emoji-single-preview-container');
+        const btnCharSingleUpload = container.querySelector('#btn-char-emoji-single-upload');
+        const inputCharSingleUpload = container.querySelector('#input-char-emoji-single-upload');
+        const btnSaveCharSingle = container.querySelector('#btn-save-char-emoji-single');
+        const charSingleName = container.querySelector('#char-emoji-single-name');
+        const charSingleGroup = container.querySelector('#char-emoji-single-group');
+
+        if (charSingleUrl) {
+            charSingleUrl.addEventListener('input', () => {
+                if (charSingleUrl.value.trim()) {
+                    charSinglePreviewImg.src = charSingleUrl.value.trim();
+                    charSinglePreviewBox.style.display = 'block';
+                    currentCharSingleBase64 = null;
+                } else {
+                    charSinglePreviewBox.style.display = 'none';
+                }
+            });
+        }
+        
+        if (btnCharSingleUpload && inputCharSingleUpload) {
+            btnCharSingleUpload.addEventListener('click', () => inputCharSingleUpload.click());
+            inputCharSingleUpload.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                charSingleUrl.value = '';
+                try {
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = ev => resolve(ev.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    currentCharSingleBase64 = base64;
+                    charSinglePreviewImg.src = base64;
+                    charSinglePreviewBox.style.display = 'block';
+                } catch(err) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('失败', '读取图片失败');
+                }
+                e.target.value = '';
+            });
+        }
+        
+        if (btnSaveCharSingle) {
+            btnSaveCharSingle.addEventListener('click', async () => {
+                const nameVal = charSingleName.value.trim();
+                if (!nameVal) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '请填写表情名称');
+                    return;
+                }
+                const urlVal = charSingleUrl.value.trim();
+                if (!urlVal && !currentCharSingleBase64) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '请填写链接或上传图片');
+                    return;
+                }
+                
+                const emojiId = editingCharEmojiId || 'char_emoji_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                const emojiObj = {
+                    id: emojiId,
+                    name: charSingleName.value.trim(),
+                    groupId: charSingleGroup ? charSingleGroup.value : 'default',
+                    type: currentCharSingleBase64 ? 'local' : 'url',
+                    url: currentCharSingleBase64 ? '' : urlVal
+                };
+                
+                if (currentCharSingleBase64 && window.ImageStorageManager) {
+                    try {
+                        await window.ImageStorageManager.saveToIndexedDB(emojiId, currentCharSingleBase64);
+                    } catch(e) {
+                        if (window._currentChatOSAlert) window._currentChatOSAlert('失败', '图片保存到本地存储失败');
+                        return;
+                    }
+                } else if (editingCharEmojiId && emojiObj.type === 'url' && window.ImageStorageManager) {
+                    try {
+                        await window.ImageStorageManager.deleteFromIndexedDB(editingCharEmojiId);
+                    } catch (e) {}
+                }
+                
+                let emojis = loadCharEmojis();
+                if (editingCharEmojiId) {
+                    const idx = emojis.findIndex(e => e.id === editingCharEmojiId);
+                    if (idx !== -1) {
+                        emojis[idx] = emojiObj;
+                    }
+                } else {
+                    emojis.unshift(emojiObj);
+                }
+                saveCharEmojis(emojis);
+                
+                popupCharEmojiSingle.classList.remove('active');
+                renderCharEmojiManageList();
+            });
+        }
+
+        const btnAddCharEmojiBatch = container.querySelector('#btn-add-char-emoji-batch');
+        const charBatchText = container.querySelector('#char-emoji-batch-text');
+        const charBatchGroup = container.querySelector('#char-emoji-batch-group');
+        const btnCharBatchUpload = container.querySelector('#btn-char-emoji-batch-upload');
+        const inputCharBatchUpload = container.querySelector('#input-char-emoji-batch-upload');
+        const btnSaveCharBatch = container.querySelector('#btn-save-char-emoji-batch');
+        
+        if (btnAddCharEmojiBatch && popupCharEmojiBatch) {
+            btnAddCharEmojiBatch.addEventListener('click', () => {
+                if (charBatchText) charBatchText.value = '';
+                if (charBatchGroup) {
+                    charBatchGroup.innerHTML = '';
+                    const groups = loadCharEmojiGroups();
+                    groups.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id;
+                        opt.textContent = g.name;
+                        charBatchGroup.appendChild(opt);
+                    });
+                    charBatchGroup.value = currentCharEmojiManageGroupId !== 'all' ? currentCharEmojiManageGroupId : 'default';
+                }
+                popupCharEmojiBatch.classList.add('active');
+            });
+        }
+        
+        if (btnCharBatchUpload && inputCharBatchUpload) {
+            btnCharBatchUpload.addEventListener('click', () => inputCharBatchUpload.click());
+            inputCharBatchUpload.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (window._currentChatOSAlert) {
+                    window._currentChatOSAlert('正在解析', '正在读取文档内容...');
+                }
+
+                try {
+                    let textContent = '';
+                    const extension = file.name.split('.').pop().toLowerCase();
+
+                    if (extension === 'txt') {
+                        textContent = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => resolve(ev.target.result);
+                            reader.onerror = () => reject(new Error('TXT读取失败'));
+                            reader.readAsText(file, 'utf-8'); 
+                        });
+                    } else if (extension === 'doc' || extension === 'docx') {
+                        if (typeof mammoth === 'undefined') throw new Error('未加载文档解析库');
+                        const arrayBuffer = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => resolve(ev.target.result);
+                            reader.onerror = () => reject(new Error('文档读取失败'));
+                            reader.readAsArrayBuffer(file);
+                        });
+                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        textContent = result.value;
+                    }
+                    
+                    if (chatAlertPopup) chatAlertPopup.classList.remove('active');
+                    if (charBatchText) charBatchText.value = textContent;
+                } catch (err) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('解析失败', err.message);
+                } finally {
+                    e.target.value = '';
+                }
+            });
+        }
+        
+        if (btnSaveCharBatch) {
+            btnSaveCharBatch.addEventListener('click', () => {
+                if (!charBatchText) return;
+                const text = charBatchText.value.trim();
+                if (!text) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '请输入内容');
+                    return;
+                }
+                
+                const lines = text.split('\n');
+                let emojis = loadCharEmojis();
+                let addedCount = 0;
+                
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (!line) return;
+                    
+                    const httpIndex = line.search(/http[s]?:\/\//i);
+                    let name = '';
+                    let url = '';
+
+                    if (httpIndex !== -1) {
+                        url = line.substring(httpIndex).trim();
+                        if (httpIndex > 0) {
+                            name = line.substring(0, httpIndex)
+                                .replace(/[\s:\|：，,。、\-—=~～_]+$/, '')
+                                .trim();
+                        }
+                        
+                        const emojiObj = {
+                            id: 'char_emoji_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5) + addedCount,
+                            name: name,
+                            groupId: charBatchGroup ? charBatchGroup.value : 'default',
+                            type: 'url',
+                            url: url
+                        };
+                        
+                        emojis.unshift(emojiObj);
+                        addedCount++;
+                    }
+                });
+                
+                if (addedCount > 0) {
+                    saveCharEmojis(emojis);
+                    if (popupCharEmojiBatch) popupCharEmojiBatch.classList.remove('active');
+                    renderCharEmojiManageList();
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('导入成功', `成功导入了 ${addedCount} 个角色表情`);
+                } else {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '未能解析出任何有效的表情链接，请检查格式');
+                }
+            });
+        }
+
+        if (inputCharEmojiManageSearch) {
+            inputCharEmojiManageSearch.addEventListener('input', (e) => {
+                currentCharEmojiManageSearchKey = e.target.value.trim();
+                renderCharEmojiManageList();
+                updateCharEmojiManageFooter();
+            });
+        }
+        
         // 移动表情包逻辑
         const selMoveTargetGroup = container.querySelector('#emoji-move-target-group');
         const btnConfirmMoveEmojis = container.querySelector('#btn-confirm-move-emojis');
@@ -2808,6 +3825,61 @@ window.SystemApps['chat'] = {
             });
         }
         
+        // 角色表情包移动逻辑
+        const btnMoveSelectedCharEmojis = container.querySelector('#btn-move-selected-char-emojis');
+        const selCharMoveTargetGroup = container.querySelector('#char-emoji-move-target-group');
+        const btnConfirmMoveCharEmojis = container.querySelector('#btn-confirm-move-char-emojis');
+        const popupCharEmojiMove = container.querySelector('#chat-char-emoji-move-popup');
+
+        if (btnMoveSelectedCharEmojis) {
+            btnMoveSelectedCharEmojis.addEventListener('click', () => {
+                if (selectedCharEmojiIds.size === 0) return;
+                
+                // 填充下拉选项
+                if (selCharMoveTargetGroup) {
+                    selCharMoveTargetGroup.innerHTML = '';
+                    const groups = loadCharEmojiGroups();
+                    
+                    // 也加上默认分组
+                    const allGroups = [{ id: 'default', name: '默认分组' }, ...groups];
+                    
+                    allGroups.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id;
+                        opt.textContent = g.name;
+                        selCharMoveTargetGroup.appendChild(opt);
+                    });
+                }
+                
+                if (popupCharEmojiMove) popupCharEmojiMove.classList.add('active');
+            });
+        }
+
+        if (btnConfirmMoveCharEmojis) {
+            btnConfirmMoveCharEmojis.addEventListener('click', () => {
+                if (!selCharMoveTargetGroup || !selCharMoveTargetGroup.value) return;
+                const targetGroupId = selCharMoveTargetGroup.value;
+                
+                let emojis = loadCharEmojis();
+                emojis.forEach(e => {
+                    if (selectedCharEmojiIds.has(e.id)) {
+                        e.groupId = targetGroupId;
+                    }
+                });
+                saveCharEmojis(emojis);
+                
+                selectedCharEmojiIds.clear();
+                isCharEmojiMultiSelectMode = false;
+                if (popupCharEmojiMove) popupCharEmojiMove.classList.remove('active');
+                
+                updateCharEmojiManageFooter();
+                renderCharEmojiManageGroups();
+                renderCharEmojiManageList();
+                
+                if (window._currentChatOSAlert) window._currentChatOSAlert('移动成功', '角色表情包已移动到指定分组。');
+            });
+        }
+
         // 单个添加相关节点预取
         const singleTitle = container.querySelector('#emoji-single-title');
         const singleName = container.querySelector('#emoji-single-name');
@@ -3017,7 +4089,7 @@ window.SystemApps['chat'] = {
         const btnAddEmojiGroup = container.querySelector('#btn-add-emoji-group');
         if (btnAddEmojiGroup) {
             btnAddEmojiGroup.addEventListener('click', () => {
-                showChatPrompt('新建表情分组', '例如：日常', (name) => {
+                showChatPrompt('新建表情分组', '', (name) => {
                     if (name && name.trim()) {
                         let groups = loadEmojiGroups();
                         const newGroupId = 'group_' + Date.now();
@@ -3032,9 +4104,14 @@ window.SystemApps['chat'] = {
                         updateEmojiManageFooter();
                         renderEmojiPanelGroups();
                     }
-                });
+                }, false, '', true, '例如：日常');
             });
         }
+
+        const popupEmojiGroupAction = container.querySelector('#chat-emoji-group-action-popup');
+        const inputEmojiGroupName = container.querySelector('#emoji-group-action-name');
+        const btnEmojiGroupDelete = container.querySelector('#btn-emoji-group-delete');
+        const btnEmojiGroupSave = container.querySelector('#btn-emoji-group-save');
 
         const btnManageGroupActions = container.querySelector('#btn-manage-group-actions');
         if (btnManageGroupActions) {
@@ -3052,50 +4129,64 @@ window.SystemApps['chat'] = {
                 const group = groups.find(g => g.id === currentEmojiManageGroupId);
                 if (!group) return;
                 
-                showChatConfirm('分组操作', `要对分组【${group.name}】执行什么操作？\n注意：删除分组不会删除其中的表情，它们将被移至默认分组。`, () => {
-                    // 这里原本可以做菜单，简化为直接询问重命名还是删除
-                    // 为了交互简便，这里点击直接弹窗重命名，不实现复杂的菜单。
-                    // 实际可结合 showChatPrompt 实现
-                });
-                
-                // 暂时用 prompt 提供两个选项
-                showChatPrompt(`重命名分组或输入 delete 删除`, group.name, (val) => {
-                    if (!val || !val.trim()) return;
-                    if (val.trim().toLowerCase() === 'delete') {
-                        // 删除分组
-                        showChatConfirm('确认删除', `确定要删除分组【${group.name}】吗？表情将移至默认分组。`, () => {
-                            let gs = loadEmojiGroups();
-                            gs = gs.filter(g => g.id !== currentEmojiManageGroupId);
-                            saveEmojiGroups(gs);
-                            
-                            let es = loadEmojis();
-                            es.forEach(e => {
-                                if (e.groupId === currentEmojiManageGroupId) {
-                                    e.groupId = 'default';
-                                }
-                            });
-                            saveEmojis(es);
-                            
-                            currentEmojiManageGroupId = 'all';
-                            renderEmojiManageGroups();
-                            renderEmojiManageList();
-                            renderEmojiPanelGroups();
-                            renderEmojiPanelList();
-                            if (window._currentChatOSAlert) window._currentChatOSAlert('已删除', '分组已删除。');
-                        });
-                    } else {
-                        // 重命名
-                        let gs = loadEmojiGroups();
-                        const idx = gs.findIndex(g => g.id === currentEmojiManageGroupId);
-                        if (idx !== -1) {
-                            gs[idx].name = val.trim();
-                            saveEmojiGroups(gs);
-                            renderEmojiManageGroups();
-                            renderEmojiPanelGroups();
-                            if (window._currentChatOSAlert) window._currentChatOSAlert('已重命名', '分组重命名成功。');
+                if (popupEmojiGroupAction && inputEmojiGroupName) {
+                    inputEmojiGroupName.value = group.name;
+                    popupEmojiGroupAction.classList.add('active');
+                }
+            });
+        }
+
+        if (btnEmojiGroupDelete) {
+            btnEmojiGroupDelete.addEventListener('click', () => {
+                const groups = loadEmojiGroups();
+                const group = groups.find(g => g.id === currentEmojiManageGroupId);
+                if (!group) return;
+
+                showChatConfirm('确认删除', `确定要删除分组【${group.name}】吗？表情将移至默认分组。`, () => {
+                    let gs = loadEmojiGroups();
+                    gs = gs.filter(g => g.id !== currentEmojiManageGroupId);
+                    saveEmojiGroups(gs);
+                    
+                    let es = loadEmojis();
+                    es.forEach(e => {
+                        if (e.groupId === currentEmojiManageGroupId) {
+                            e.groupId = 'default';
                         }
-                    }
-                }, true, '输入 delete 以删除分组');
+                    });
+                    saveEmojis(es);
+                    
+                    currentEmojiManageGroupId = 'all';
+                    renderEmojiManageGroups();
+                    renderEmojiManageList();
+                    renderEmojiPanelGroups();
+                    renderEmojiPanelList();
+                    
+                    if (popupEmojiGroupAction) popupEmojiGroupAction.classList.remove('active');
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('已删除', '分组已删除。');
+                });
+            });
+        }
+
+        if (btnEmojiGroupSave) {
+            btnEmojiGroupSave.addEventListener('click', () => {
+                if (!inputEmojiGroupName) return;
+                const newName = inputEmojiGroupName.value.trim();
+                if (!newName) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '分组名称不能为空。');
+                    return;
+                }
+
+                let gs = loadEmojiGroups();
+                const idx = gs.findIndex(g => g.id === currentEmojiManageGroupId);
+                if (idx !== -1) {
+                    gs[idx].name = newName;
+                    saveEmojiGroups(gs);
+                    renderEmojiManageGroups();
+                    renderEmojiPanelGroups();
+                    
+                    if (popupEmojiGroupAction) popupEmojiGroupAction.classList.remove('active');
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('已重命名', '分组重命名成功。');
+                }
             });
         }
 
@@ -3454,7 +4545,7 @@ window.SystemApps['chat'] = {
                     
                     convExtPanel.style.display = 'none';
                     convPlusBtn.style.transform = 'rotate(0deg)';
-                });
+                }, false, '', true);
             });
         }
 
@@ -3488,7 +4579,7 @@ window.SystemApps['chat'] = {
                     
                     convExtPanel.style.display = 'none';
                     convPlusBtn.style.transform = 'rotate(0deg)';
-                });
+                }, false, '', true);
             });
         }
 
@@ -3624,7 +4715,7 @@ window.SystemApps['chat'] = {
                     
                     convExtPanel.style.display = 'none';
                     convPlusBtn.style.transform = 'rotate(0deg)';
-                }, true, '添加备注（选填）');
+                }, true, '添加备注（选填）', true);
             });
         }
 
@@ -3719,7 +4810,7 @@ window.SystemApps['chat'] = {
                     c = c.replace(/\[\[LOCATION:(.*?)\]\]/g, '[分享了一个位置，地址是："$1"]');
                 }
                 if (c.includes('[[EMOJI:')) {
-                    c = c.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => `[发送了一个表情包，表情含义是：${name || '表情'}]`);
+                    c = c.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => `[${name || '表情'}]`);
                 }
                 return `${m.role === 'user' ? '用户' : '角色'}: ${c}`;
             }).join('\n');
@@ -3772,7 +4863,7 @@ window.SystemApps['chat'] = {
                     c = c.replace(/\[\[LOCATION:(.*?)\]\]/g, '[分享了一个位置，地址是："$1"]');
                 }
                 if (c.includes('[[EMOJI:')) {
-                    c = c.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => `[发送了一个表情包，表情含义是：${name || '表情'}]`);
+                    c = c.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => `[${name || '表情'}]`);
                 }
                 return c;
             }).join('\n---\n');
@@ -4631,6 +5722,83 @@ window.SystemApps['chat'] = {
                     };
                 }
 
+                // 角色设置中：渲染表情包兜底分组选项
+                const renderCharEmojiFallbackGroups = (cc) => {
+                    const containerBox = container.querySelector('#cs-char-emoji-fallback-groups-list');
+                    if (!containerBox) return;
+                    containerBox.innerHTML = '';
+                    
+                    const groups = JSON.parse(localStorage.getItem('nrj-custom-emoji-groups') || '[]');
+                    if (groups.length === 0) {
+                        containerBox.innerHTML = '<span style="font-size: 12px; color: var(--text-secondary);">暂无用户表情包分组</span>';
+                        return;
+                    }
+                    
+                    const fallbackGroups = cc.emojiFallbackGroups || [];
+                    
+                    groups.forEach(g => {
+                        const label = document.createElement('label');
+                        label.style.cssText = 'display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; padding: 4px 8px; background: #fff; border-radius: 6px; border: 1px solid var(--border-color);';
+                        
+                        const cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        cb.value = g.id;
+                        cb.checked = fallbackGroups.includes(g.id);
+                        
+                        cb.addEventListener('change', () => {
+                            let fc = JSON.parse(localStorage.getItem(`nrj-chat-config-${currentPersona.id}`) || '{}');
+                            if (!fc.emojiFallbackGroups) fc.emojiFallbackGroups = [];
+                            if (cb.checked) {
+                                if (!fc.emojiFallbackGroups.includes(g.id)) fc.emojiFallbackGroups.push(g.id);
+                            } else {
+                                fc.emojiFallbackGroups = fc.emojiFallbackGroups.filter(id => id !== g.id);
+                            }
+                            localStorage.setItem(`nrj-chat-config-${currentPersona.id}`, JSON.stringify(fc));
+                        });
+                        
+                        label.appendChild(cb);
+                        label.appendChild(document.createTextNode(g.name));
+                        containerBox.appendChild(label);
+                    });
+                };
+
+                const toggleCharEmojiFallback = container.querySelector('#cs-char-emoji-fallback-toggle');
+                const charEmojiFallbackGroupsContainer = container.querySelector('#cs-char-emoji-fallback-groups-container');
+                if (toggleCharEmojiFallback) {
+                    const currentStrategy = charConfig.emojiStrategy || 'fallback_user';
+                    toggleCharEmojiFallback.checked = currentStrategy === 'fallback_user';
+                    
+                    if (charEmojiFallbackGroupsContainer) {
+                        charEmojiFallbackGroupsContainer.style.display = toggleCharEmojiFallback.checked ? 'flex' : 'none';
+                    }
+                    renderCharEmojiFallbackGroups(charConfig);
+
+                    toggleCharEmojiFallback.addEventListener('change', (e) => {
+                        const strategy = e.target.checked ? 'fallback_user' : 'char_only';
+                        charConfig.emojiStrategy = strategy;
+                        localStorage.setItem(`nrj-chat-config-${currentPersona.id}`, JSON.stringify(charConfig));
+                        if (charEmojiFallbackGroupsContainer) {
+                            charEmojiFallbackGroupsContainer.style.display = e.target.checked ? 'flex' : 'none';
+                        }
+                    });
+                }
+
+                const btnManageCharEmojisSettings = container.querySelector('#btn-manage-char-emojis');
+                if (btnManageCharEmojisSettings && popupCharEmojiManage) {
+                    btnManageCharEmojisSettings.addEventListener('click', () => {
+                        isCharEmojiMultiSelectMode = false;
+                        selectedCharEmojiIds.clear();
+                        currentCharEmojiManageSearchKey = '';
+                        currentCharEmojiManageGroupId = 'all';
+                        if (inputCharEmojiManageSearch) inputCharEmojiManageSearch.value = '';
+                        
+                        renderCharEmojiManageGroups();
+                        renderCharEmojiManageList();
+                        updateCharEmojiManageFooter();
+                        popupCharEmojiManage.classList.add('active');
+                    });
+                }
+
                 const upInput = container.querySelector('#cs-user-persona-select');
                 const upTrigger = container.querySelector('#cs-user-persona-dropdown-trigger');
                 const upSelectedText = container.querySelector('#cs-user-persona-selected-text');
@@ -5089,7 +6257,7 @@ window.SystemApps['chat'] = {
 
                 if (btnSaveShapePreset) {
                     btnSaveShapePreset.onclick = () => {
-                        showChatPrompt('新预设名称', '例如：魔法阵形状', (name) => {
+                        showChatPrompt('新预设名称', '', (name) => {
                             if (name) {
                                 let presets = JSON.parse(localStorage.getItem('nrj-chat-custom-shape-presets') || '[]');
                                 presets.push({
@@ -5100,7 +6268,7 @@ window.SystemApps['chat'] = {
                                 localStorage.setItem('nrj-chat-custom-shape-presets', JSON.stringify(presets));
                                 renderShapeCustomPresets();
                             }
-                        });
+                        }, false, '', true, '例如：魔法阵形状');
                     };
                 }
 
@@ -5242,7 +6410,7 @@ window.SystemApps['chat'] = {
 
                 if (btnSaveCssPreset) {
                     btnSaveCssPreset.onclick = () => {
-                        showChatPrompt('新预设名称', '自定义配色与CSS', (name) => {
+                        showChatPrompt('新预设名称', '', (name) => {
                             if (name) {
                                 let currentCustoms = JSON.parse(localStorage.getItem('nrj-chat-custom-bubble-presets') || '[]');
                                 currentCustoms.push({
@@ -5262,7 +6430,7 @@ window.SystemApps['chat'] = {
                                     window._currentChatOSAlert('保存成功', '已将当前自定义CSS与颜色保存为预设主题！');
                                 }
                             }
-                        });
+                        }, false, '', true, '例如：自定义配色与CSS');
                     };
                 }
 
@@ -5418,7 +6586,7 @@ window.SystemApps['chat'] = {
                     addDot.addEventListener('mouseenter', () => { addDot.style.borderColor = 'var(--text-color)'; addDot.style.color = 'var(--text-color)'; });
                     addDot.addEventListener('mouseleave', () => { addDot.style.borderColor = '#9ca3af'; addDot.style.color = '#9ca3af'; });
                     addDot.addEventListener('click', () => {
-                        showChatPrompt('新预设名称', '自定义配色与CSS', (name) => {
+                        showChatPrompt('新预设名称', '', (name) => {
                             if (name) {
                                 let currentCustoms = JSON.parse(localStorage.getItem('nrj-chat-custom-bubble-presets') || '[]');
                                 currentCustoms.push({
@@ -5433,7 +6601,7 @@ window.SystemApps['chat'] = {
                                 localStorage.setItem('nrj-chat-custom-bubble-presets', JSON.stringify(currentCustoms));
                                 renderBubblePresets();
                             }
-                        });
+                        }, false, '', true, '例如：自定义配色与CSS');
                     });
                     presetContainer.appendChild(addDot);
                 };
@@ -6111,6 +7279,53 @@ window.SystemApps['chat'] = {
                 }
 
                 // 组装 System Prompt (使用正则表达式 /g 全局替换，以便提示词中多次引用)
+                // 计算可用的表情包列表
+                let availableEmojis = [];
+                const charEmojis = loadCharEmojis();
+                const charEmojiGroups = loadCharEmojiGroups();
+                
+                // 找出当前角色有权限使用的分组
+                const validGroupIds = new Set();
+                charEmojiGroups.forEach(g => {
+                    if (g.targetType === 'global' || (g.targetType === 'specific' && g.targetChars && g.targetChars.includes(charId))) {
+                        validGroupIds.add(g.id);
+                    }
+                });
+                
+                charEmojis.forEach(e => {
+                    if (validGroupIds.has(e.groupId)) {
+                        availableEmojis.push({ id: e.id, name: e.name || '表情' });
+                    }
+                });
+
+                const emojiStrategy = charConfig.emojiStrategy || 'fallback_user';
+                if (emojiStrategy === 'fallback_user' && availableEmojis.length === 0) {
+                    const userEmojis = loadEmojis();
+                    const fallbackGroups = charConfig.emojiFallbackGroups || [];
+                    if (fallbackGroups.length > 0) {
+                        userEmojis.forEach(e => {
+                            if (fallbackGroups.includes(e.groupId)) {
+                                availableEmojis.push({ id: e.id, name: e.name || '表情' });
+                            }
+                        });
+                    }
+                }
+
+                let emojiMapping = {}; // 短 ID -> 真实 ID 的映射
+                let reverseEmojiMapping = {}; // 真实 ID -> 短 ID 的映射
+                let emojiPrompt = '';
+                if (availableEmojis.length > 0) {
+                    emojiPrompt = `\n\n【互动：发送表情包】\n当且仅当你的情绪和下列表情包的含义高度匹配时，你可以发送表情包。格式严格为 [[EMOJI:表情ID|表情名称]]，必须包含闭合的两个右方括号！\n你当前可以使用的表情包列表如下（绝对不能自己编造不存在的ID）：\n`;
+                    availableEmojis.forEach((e, idx) => {
+                        const shortId = `e${idx}`;
+                        emojiMapping[shortId] = e.id;
+                        reverseEmojiMapping[e.id] = shortId;
+                        emojiPrompt += `- id: ${shortId}, 含义: ${e.name}\n`;
+                    });
+                } else {
+                    emojiPrompt = `\n\n【互动：发送表情包】\n当前没有任何表情包可用，请不要发送任何 [[EMOJI:xxx]] 格式的消息。`;
+                }
+
                 let multiMsgPrompt = "";
                 if (charConfig.multiMsgEnabled) {
                     const minMsg = charConfig.multiMsgMin || 1;
@@ -6148,7 +7363,7 @@ window.SystemApps['chat'] = {
                     .replace(/{char_time_info}/g, charTimeInfo)
                     .replace(/{time_since_last_message}/g, timeSinceLast)
                     .replace(/{worldbook_entries}/g, worldbookContent)
-                    .replace(/{long_term_memory}/g, longTermMemoryContent) + multiMsgPrompt;
+                    .replace(/{long_term_memory}/g, longTermMemoryContent) + emojiPrompt + multiMsgPrompt;
 
                 // {{char}} 和 {{user}} 替换函数
                 const replaceVars = (text, charName, userName, role = null) => {
@@ -6168,6 +7383,15 @@ window.SystemApps['chat'] = {
                         result = result.replace(/\[\[IMAGE:(.*?)\]\]/g, '[发送了一张图片，图片内容是："$1"]');
                         result = result.replace(/\[\[LOCATION:(.*?)\]\]/g, '[分享了一个位置，地址是："$1"]');
                         result = result.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => `[发送了一个表情包，表情含义是：${name || '表情'}]`);
+                    } else if (role === 'assistant') {
+                        result = result.replace(/\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g, (match, id, name) => {
+                            const shortId = reverseEmojiMapping[id];
+                            if (shortId) {
+                                return `[[EMOJI:${shortId}|${name || '表情'}]]`;
+                            } else {
+                                return `[发送了一个表情包，表情含义是：${name || '表情'}]`;
+                            }
+                        });
                     }
                     return result;
                 };
@@ -6189,6 +7413,33 @@ window.SystemApps['chat'] = {
 
                 // 提取可能出现的 <think> 标签（直接移除，不在界面展示）
                 replyText = replyText.replace(/<think>([\s\S]*?)<\/think>/g, '').trim();
+
+                // 修复残缺的 [[EMOJI: 标签并拦截非法表情
+                // AI 有时可能输出 [[EMOJI:char_emoji_17800 这种不完整格式，或者自己编造 ID
+                replyText = replyText.replace(/\[\[EMOJI:([^\s|\]]+)(?:\|([^\]\n]*))?(?:\]\])?/g, (match, id, name) => {
+                    // 1. 尝试从短 ID 映射中找
+                    let realId = emojiMapping[id];
+                    
+                    // 2. 如果没找到，尝试直接匹配或者模糊匹配真实 availableEmojis
+                    if (!realId) {
+                        const exactMatch = availableEmojis.find(e => e.id === id);
+                        if (exactMatch) {
+                            realId = exactMatch.id;
+                        } else {
+                            // 模糊匹配：尝试看看是不是截断的真实ID
+                            const fuzzyMatch = availableEmojis.find(e => e.id.startsWith(id) || id.startsWith(e.id));
+                            if (fuzzyMatch) {
+                                realId = fuzzyMatch.id;
+                            }
+                        }
+                    }
+
+                    if (!realId) {
+                        console.warn('拦截到非法或未授权的表情包ID:', id);
+                        return ''; // 如果 ID 不合法，直接抹除
+                    }
+                    return `[[EMOJI:${realId}|${name || '表情'}]]`; // 强制修复为标准闭合格式
+                });
 
                 // 处理收取/退回转账指令
                 let hasReceivedTransfer = false;
@@ -6272,20 +7523,32 @@ window.SystemApps['chat'] = {
                     return;
                 }
 
-                let replies = [];
+                let initialReplies = [];
                 // 不管是否开启强制连发，只要含有特定分隔符或换行，统统拆分为独立气泡
                 if (replyText.includes('[SPLIT]')) {
-                    replies = replyText.split('[SPLIT]').map(s => s.trim()).filter(s => s);
+                    initialReplies = replyText.split('[SPLIT]').map(s => s.trim()).filter(s => s);
                 } else if (replyText.includes('\n---\n')) {
-                    replies = replyText.split('\n---\n').map(s => s.trim()).filter(s => s);
+                    initialReplies = replyText.split('\n---\n').map(s => s.trim()).filter(s => s);
                 } else if (replyText.includes('\n\n')) {
                     // 如果没有特殊的标记符号，双换行也作为分段（多个气泡）的依据
-                    replies = replyText.split('\n\n').map(s => s.trim()).filter(s => s);
+                    initialReplies = replyText.split('\n\n').map(s => s.trim()).filter(s => s);
                 } else {
                     if (replyText) {
-                        replies = [replyText];
+                        initialReplies = [replyText];
                     }
                 }
+
+                let replies = [];
+                // 强制将表情包、图片等特殊指令从文字中独立分裂成单独的消息
+                const mediaRegexForSplit = /(\[\[(?:EMOJI|IMAGE|VOICE|LOCATION|TRANSFER|QUOTE_TEXT)[^\]]*(?:\]\])?)/gi;
+                initialReplies.forEach(r => {
+                    if (r.match(mediaRegexForSplit)) {
+                        let parts = r.split(mediaRegexForSplit).map(s => s.trim()).filter(s => s);
+                        replies.push(...parts);
+                    } else {
+                        replies.push(r);
+                    }
+                });
 
                 const delaySeconds = charConfig.multiMsgDelay !== undefined ? parseFloat(charConfig.multiMsgDelay) : 2;
 
@@ -6398,17 +7661,26 @@ window.SystemApps['chat'] = {
                 const charId = currentPersona.id;
                 const history = getChatHistory(charId);
 
-                const newMsg = { role: 'user', content: text, timestamp: Date.now() };
-                addBubble('me', text, null, false, newMsg, history.length);
+                // 将用户发送的文字和表情包强制拆分为独立消息
+                const mediaRegexForSplit = /(\[\[(?:EMOJI|IMAGE|VOICE|LOCATION|TRANSFER|QUOTE_TEXT)[^\]]*(?:\]\])?)/gi;
+                let parts = text.split(mediaRegexForSplit).map(s => s.trim()).filter(s => s);
+
+                if (parts.length === 0) return;
+
+                parts.forEach(part => {
+                    const newMsg = { role: 'user', content: part, timestamp: Date.now() };
+                    addBubble('me', part, null, false, newMsg, history.length);
+                    history.push(newMsg);
+                });
+
                 convInput.value = '';
                 convSendBtn.classList.add('disabled');
                 convSendBtn.classList.remove('active');
                 
-                history.push(newMsg);
                 saveChatHistory(charId, history);
                 
                 // 更新列表项的最后消息和时间
-                currentPersona.message = text;
+                currentPersona.message = parts[parts.length - 1];
                 const finalTimezone = (currentPersona.rawCharData && currentPersona.rawCharData.timezone) || Intl.DateTimeFormat().resolvedOptions().timeZone;
                 currentPersona.time = getLocalTimeByTimezone(finalTimezone);
             });

@@ -2,6 +2,7 @@ window.ChatRender = {
     // 构建引用的 HTML
     buildQuoteHtml: function(quoteStyleOption, qName, qText) {
         let previewText = qText;
+        previewText = previewText.replace(/\[\[EMOJI:[^|\]]+\|([^\]]+)\]\]/g, '[$1]').replace(/\[\[EMOJI:[^\]]+\]\]/g, '[表情]');
         if (previewText.includes('[[IMAGE:')) previewText = '[图片]';
         else if (previewText.includes('[[VOICE:')) previewText = '[语音]';
         else if (previewText.includes('[[LOCATION:')) previewText = '[位置]';
@@ -268,65 +269,105 @@ window.ChatRender = {
         const imageRegex = /\[\[IMAGE:(.*?)\]\]/g;
         const locationRegex = /\[\[LOCATION:(.*?)\]\]/g;
         const transferReceiptRegex = /\[\[TRANSFER_RECEIPT:([^|]+)\|([^|]+)(?:\|([^\]]+))?\]\]/g;
-        const emojiRegex = /\[\[EMOJI:([^|\]]+)(?:\|([^\]]+))?\]\]/g;
+        const emojiRegex = /\[\[EMOJI:([^\s|\]]+)(?:\|([^\]]*))?(?:\]\])?/g;
+        const splitRegex = /(\[\[EMOJI:[^\s|\]]+(?:\|[^\]]*)?(?:\]\])?)/;
+
+        let bubblesGroupHtml = '';
         
-        // 自定义表情渲染处理
-        if (text.match(emojiRegex)) {
+        if (type === 'system' && msgObj && (msgObj.isUserRecall || msgObj.isAiRecall)) {
+            bubblesGroupHtml = `
+                <div class="${bubbleClass}" style="${colorStyleStr}">
+                    <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}${quoteStyleOption === 'inside' ? quoteHtml : ''}</div>
+                </div>
+            `;
+        } else {
             const emojis = [];
             try {
                 emojis.push(...JSON.parse(localStorage.getItem('nrj-custom-emojis') || '[]'));
             } catch(e) {}
-            
-            displayText = text.replace(emojiRegex, (match, emojiId, emojiName) => {
-                const found = emojis.find(e => e.id === emojiId);
-                if (found) {
-                    const uniqueId = 'emoji-img-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
-                    let src = found.type === 'url' ? found.url : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-                    
-                    if (found.type === 'local') {
-                        setTimeout(() => {
-                            if (window.ImageStorageManager) {
-                                window.ImageStorageManager.loadFromIndexedDB(found.id).then(data => {
-                                    if (data) {
-                                        const el = document.getElementById(uniqueId);
-                                        if (el) el.src = data;
+            try {
+                emojis.push(...JSON.parse(localStorage.getItem('nrj-char-emojis') || '[]'));
+            } catch(e) {}
+
+            let parts = displayText.split(splitRegex).filter(p => p !== '');
+            let bubblesHtmlArray = [];
+
+            parts.forEach((part, idx) => {
+                let isOnlyWhitespace = part.trim() === '' && !part.match(splitRegex);
+                if (isOnlyWhitespace && parts.length > 1) return;
+                
+                let partBubbleClass = bubbleClass;
+                let partColorStyle = colorStyleStr;
+                let partHtml = part;
+
+                if (part.match(splitRegex)) {
+                    partHtml = part.replace(emojiRegex, (match, emojiId, emojiName) => {
+                        const found = emojis.find(e => e.id === emojiId);
+                        if (found) {
+                            const uniqueId = 'emoji-img-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
+                            let src = found.type === 'url' ? found.url : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                            if (found.type === 'local') {
+                                setTimeout(() => {
+                                    if (window.ImageStorageManager) {
+                                        window.ImageStorageManager.loadFromIndexedDB(found.id).then(data => {
+                                            if (data) {
+                                                const el = document.getElementById(uniqueId);
+                                                if (el) el.src = data;
+                                            }
+                                        }).catch(()=>{});
                                     }
-                                }).catch(()=>{});
+                                }, 0);
                             }
-                        }, 0);
+                            return `<img id="${uniqueId}" src="${src}" style="width: 100px; height: 100px; object-fit: contain; vertical-align: middle; background: transparent;" alt="${found.name || emojiName || '表情'}">`;
+                        }
+                        return '';
+                    });
+                    
+                    if (partHtml === '') return;
+
+                    partBubbleClass = 'chat-bubble';
+                    partColorStyle = 'padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important;';
+                } else {
+                    if (part.match(imageRegex)) {
+                        partHtml = part.replace(imageRegex, (match, imageText) => this.renderImageBubble(imageText));
+                        partBubbleClass = 'chat-bubble';
+                        partColorStyle = 'padding: 0 !important; overflow: hidden; background: transparent !important; border: none !important; box-shadow: none !important;';
+                    } else if (part.match(voiceRegex)) {
+                        partHtml = part.replace(voiceRegex, (match, voiceText) => this.renderVoiceBubble(voiceText, voiceWaveEnabled));
+                    } else if (part.match(locationRegex)) {
+                        partHtml = part.replace(locationRegex, (match, locText) => this.renderLocationBubble(locText));
+                        partBubbleClass = 'chat-bubble';
+                        partColorStyle = 'padding: 0 !important; overflow: hidden; background: transparent !important; border: none !important; box-shadow: none !important;';
+                    } else if (part.match(transferRegex)) {
+                        partHtml = part.replace(transferRegex, (match, amount, remark, status, tId) => this.renderTransferBubble(amount, remark, status, tId, type));
+                        partBubbleClass = 'chat-bubble';
+                        partColorStyle = '--chat-them-bg: #FF9800; --chat-me-bg: #FF9800; padding: 0 !important; overflow: hidden; border: 1px solid transparent; border-radius: 8px !important;';
+                    } else if (part.match(transferReceiptRegex)) {
+                        partHtml = part.replace(transferReceiptRegex, (match, amount, status, tId) => this.renderTransferReceiptBubble(amount, status, tId));
+                        partBubbleClass = 'chat-bubble';
+                        partColorStyle = '--chat-them-bg: #FF9800; --chat-me-bg: #FF9800; padding: 0 !important; overflow: hidden; border: 1px solid transparent; border-radius: 8px !important;';
                     }
                     
-                    return `<img id="${uniqueId}" src="${src}" style="width: 100px; height: 100px; object-fit: contain; vertical-align: middle; background: transparent;" alt="${found.name || emojiName || '表情'}">`;
+                    if (parts.length > 1 && !part.match(imageRegex) && !part.match(voiceRegex) && !part.match(locationRegex) && !part.match(transferRegex) && !part.match(transferReceiptRegex)) {
+                        partHtml = partHtml.trim();
+                        if(partHtml === '') return;
+                    }
                 }
-                return match;
-            });
-            
-            // 如果只有表情没有其他文字，去掉气泡背景
-            const textWithoutEmoji = text.replace(emojiRegex, '').trim();
-            if (textWithoutEmoji === '') {
-                bubbleClass = 'chat-bubble';
-                colorStyleStr = 'padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important;';
-            }
-        }
 
-        if (text.match(imageRegex)) {
-            displayText = text.replace(imageRegex, (match, imageText) => this.renderImageBubble(imageText));
-            bubbleClass = 'chat-bubble';
-            colorStyleStr = 'padding: 0 !important; overflow: hidden; background: transparent !important; border: none !important; box-shadow: none !important;';
-        } else if (text.match(voiceRegex)) {
-            displayText = text.replace(voiceRegex, (match, voiceText) => this.renderVoiceBubble(voiceText, voiceWaveEnabled));
-        } else if (text.match(locationRegex)) {
-            displayText = text.replace(locationRegex, (match, locText) => this.renderLocationBubble(locText));
-            bubbleClass = 'chat-bubble';
-            colorStyleStr = 'padding: 0 !important; overflow: hidden; background: transparent !important; border: none !important; box-shadow: none !important;';
-        } else if (text.match(transferRegex)) {
-            displayText = text.replace(transferRegex, (match, amount, remark, status, tId) => this.renderTransferBubble(amount, remark, status, tId, type));
-            bubbleClass = 'chat-bubble';
-            colorStyleStr = '--chat-them-bg: #FF9800; --chat-me-bg: #FF9800; padding: 0 !important; overflow: hidden; border: 1px solid transparent; border-radius: 8px !important;';
-        } else if (text.match(transferReceiptRegex)) {
-            displayText = text.replace(transferReceiptRegex, (match, amount, status, tId) => this.renderTransferReceiptBubble(amount, status, tId));
-            bubbleClass = 'chat-bubble';
-            colorStyleStr = '--chat-them-bg: #FF9800; --chat-me-bg: #FF9800; padding: 0 !important; overflow: hidden; border: 1px solid transparent; border-radius: 8px !important;';
+                let appendInsideQuote = '';
+                if (idx === parts.length - 1 && quoteStyleOption === 'inside' && quoteHtml) {
+                    appendInsideQuote = quoteHtml;
+                }
+
+                bubblesHtmlArray.push(`
+                    <div class="${partBubbleClass}" style="width: fit-content; max-width: 100%; ${partColorStyle}">
+                        <div class="chat-bubble-text" style="position: relative; z-index: 10;">${partHtml}${appendInsideQuote}</div>
+                    </div>
+                `);
+            });
+
+            let align = type === 'me' ? 'flex-end' : 'flex-start';
+            bubblesGroupHtml = `<div style="display: flex; flex-direction: column; gap: 4px; max-width: 100%; align-items: ${align};">${bubblesHtmlArray.join('')}</div>`;
         }
 
         let bubbleContentHtml = '';
@@ -336,9 +377,7 @@ window.ChatRender = {
             let totalGreetings = msgObj.greetings.length;
             bubbleContentHtml = `
                 <div class="chat-bubble-group" style="display: flex; flex-direction: column; gap: 4px; max-width: 100%;">
-                    <div class="${bubbleClass}" style="max-width: 100%; ${colorStyleStr}">
-                        <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}${quoteStyleOption === 'inside' ? quoteHtml : ''}</div>
-                    </div>
+                    ${bubblesGroupHtml}
                     ${quoteStyleOption === 'outside' ? quoteHtml : ''}
                     <div class="greeting-nav-container" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <button class="greeting-arrow left-arrow" data-idx="${indexInHistory}"><i class="ph ph-caret-left"></i></button>
@@ -352,18 +391,12 @@ window.ChatRender = {
                 let align = type === 'me' ? 'flex-end' : 'flex-start';
                 bubbleContentHtml = `
                     <div style="display: flex; flex-direction: column; gap: 2px; max-width: 100%; align-items: ${align};">
-                        <div class="${bubbleClass}" style="width: fit-content; max-width: 100%; ${colorStyleStr}">
-                            <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}</div>
-                        </div>
+                        ${bubblesGroupHtml}
                         ${quoteHtml}
                     </div>
                 `;
             } else {
-                bubbleContentHtml = `
-                    <div class="${bubbleClass}" style="${colorStyleStr}">
-                        <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}${quoteHtml}</div>
-                    </div>
-                `;
+                bubbleContentHtml = bubblesGroupHtml;
             }
         }
         

@@ -52,6 +52,52 @@ window.ChatAppTemplate = `
                 border-color: #18181b;
                 color: #ffffff;
             }
+
+            /* 会话多选模式样式 */
+            .chat-scroll-area.select-mode .chat-list-item {
+                padding-left: 48px;
+                position: relative;
+                pointer-events: auto; /* Allow click to toggle selection */
+            }
+            .chat-scroll-area.select-mode .chat-list-item .chat-item-avatar,
+            .chat-scroll-area.select-mode .chat-list-item .chat-item-content {
+                pointer-events: none;
+            }
+            .chat-list-item .session-checkbox {
+                display: none;
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 1px solid #d1d1d6;
+                background-color: transparent;
+                align-items: center;
+                justify-content: center;
+                color: transparent;
+                transition: all 0.2s;
+                z-index: 10;
+            }
+            .chat-scroll-area.select-mode .chat-list-item .session-checkbox {
+                display: flex;
+            }
+            .chat-list-item.selected .session-checkbox {
+                background-color: #18181b;
+                border-color: #18181b;
+                color: #ffffff;
+            }
+            /* 会话置顶样式 */
+            .chat-list-item-wrapper.pinned .chat-list-item {
+                background-color: rgba(0,0,0,0.03);
+            }
+            .chat-list-item-wrapper.pinned .chat-item-name::after {
+                content: "📌";
+                font-size: 10px;
+                margin-left: 4px;
+                opacity: 0.5;
+            }
             
             .chat-message-select-bar {
                 display: none;
@@ -369,7 +415,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 7. 自定义 Alert 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-alert-popup" style="z-index: 999; background-color: rgba(0, 0, 0, 0.4);">
+                <div class="chat-popup-overlay" id="chat-alert-popup" style="z-index: 2000; background-color: rgba(0, 0, 0, 0.4);">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; border-radius: 12px; overflow: hidden; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box; text-align: left;">
                         <h3 id="chat-alert-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0 0 12px 0; display: none; letter-spacing: -0.01em;">提示</h3>
                         <p id="chat-alert-message" style="font-size: 14px; color: #52525b; margin: 0 0 24px 0; line-height: 1.6; word-break: break-word;"></p>
@@ -534,6 +580,31 @@ window.ChatAppTemplate = `
                                         </div>
                                     </div>
                                     <div style="font-size: 12px; color: var(--text-secondary);">开启后强制要求AI每次回复特定条数的消息。未开启则由AI自由决定（也可能会根据语境分段连发）。</div>
+                                </div>
+
+                                <div class="persona-form-group" style="margin-top: 16px; margin-bottom: 0; background: rgba(120, 120, 128, 0.08); padding: 12px; border-radius: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">角色表情包系统</span>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                        <label class="toggle-switch-ios" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: normal; color: var(--text-color); cursor: pointer;">
+                                            <div style="position: relative; width: 36px; height: 20px; flex-shrink: 0;">
+                                                <input type="checkbox" id="cs-char-emoji-fallback-toggle" checked style="opacity: 0; width: 0; height: 0; position: absolute;">
+                                                <span class="ios-slider"></span>
+                                            </div>
+                                            <span style="user-select: none;">允许使用用户表情包 (找不到专属时)</span>
+                                        </label>
+                                        
+                                        <div id="cs-char-emoji-fallback-groups-container" style="display: flex; flex-direction: column; gap: 8px; padding-left: 42px;">
+                                            <div style="font-size: 12px; color: var(--text-secondary);">选择允许使用的用户表情分组：</div>
+                                            <div id="cs-char-emoji-fallback-groups-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                            </div>
+                                        </div>
+
+                                        <button class="chat-btn-outline" id="btn-manage-char-emojis" style="width: 100%; padding: 8px 0; font-size: 13px; margin-top: 4px; background: var(--app-bg);">
+                                            <i class="ph ph-mask-happy"></i> 管理角色专属表情包
+                                        </button>
+                                    </div>
                                 </div>
 
                                 </div>
@@ -1006,7 +1077,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 12. 自定义 Prompt 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-prompt-popup" style="z-index: 1005; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
+                <div class="chat-popup-overlay" id="chat-prompt-popup" style="z-index: 2005; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; text-align: left; border-radius: 12px; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box; transition: all 0.3s ease; display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 16px 0;">
                             <h3 id="chat-prompt-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0; letter-spacing: -0.01em;">输入</h3>
@@ -1026,7 +1097,7 @@ window.ChatAppTemplate = `
                 </div>
 
                 <!-- 9. 自定义 Confirm 弹窗 (Linear风格极简) -->
-                <div class="chat-popup-overlay" id="chat-confirm-popup" style="z-index: 1000; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
+                <div class="chat-popup-overlay" id="chat-confirm-popup" style="z-index: 2001; background-color: rgba(0, 0, 0, 0.4); transition: opacity 0.2s ease;">
                     <div class="chat-popup-content" style="max-width: 340px; width: 90%; text-align: left; border-radius: 12px; background: #ffffff; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); box-sizing: border-box;">
                         <h3 id="chat-confirm-title" style="font-size: 16px; font-weight: 600; color: #18181b; margin: 0 0 8px 0; letter-spacing: -0.01em;">提示</h3>
                         <p id="chat-confirm-message" style="font-size: 14px; color: #52525b; margin: 0 0 24px 0; line-height: 1.6; word-break: break-word;"></p>
@@ -1128,7 +1199,45 @@ window.ChatAppTemplate = `
                 </div>
                 
                 <!-- 15. 消息操作菜单 (全局居中 Grid Panel 风格) -->
-                <!-- 多选操作底栏 -->
+                <!-- 会话多选操作底栏 -->
+                <div class="chat-message-select-bar" id="chat-session-select-bar">
+                    <button class="chat-select-bar-btn" id="btn-session-select-cancel">取消</button>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="chat-select-bar-btn" id="btn-session-select-pin" disabled>置顶(0)</button>
+                        <button class="chat-select-bar-btn" id="btn-session-select-unpin" disabled style="display:none;">取消置顶(0)</button>
+                        <button class="chat-select-bar-btn danger" id="btn-session-select-delete" disabled>删除(0)</button>
+                    </div>
+                    <button class="chat-select-bar-btn" id="btn-session-select-all">全选</button>
+                </div>
+
+                <!-- 会话长按菜单 -->
+                <div class="chat-message-menu-overlay" id="chat-session-menu-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1020; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: all 0.2s ease;">
+                    <div class="chat-message-menu" id="chat-session-menu" style="background: #ffffff; border-radius: 12px; box-shadow: 0 24px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08); padding: 12px; width: 280px; max-width: 90%; z-index: 1000; box-sizing: border-box; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                        
+                        <div class="msg-menu-item" id="btn-session-pin" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-push-pin" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">置顶</span>
+                        </div>
+                        
+                        <div class="msg-menu-item" id="btn-session-unpin" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-push-pin-slash" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">取消置顶</span>
+                        </div>
+                        
+                        <div class="msg-menu-item" id="btn-session-select" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-list-checks" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">多选</span>
+                        </div>
+                        
+                        <div class="msg-menu-item" id="btn-session-delete" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #ef4444;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)';" onmouseout="this.style.background='transparent';">
+                            <i class="ph ph-trash" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">删除</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 消息多选操作底栏 -->
                 <div class="chat-message-select-bar" id="chat-message-select-bar">
                     <button class="chat-select-bar-btn" id="btn-select-bar-cancel">取消</button>
                     <button class="chat-select-bar-btn danger" id="btn-select-bar-delete" disabled>删除(0)</button>
@@ -1301,7 +1410,7 @@ window.ChatAppTemplate = `
                     <div class="chat-popup-content" style="max-width: 320px;">
                         <div class="chat-popup-header">
                             <h3 class="chat-popup-title" id="emoji-single-title">添加表情</h3>
-                            <button class="chat-popup-close btn-close-popup">✕</button>
+                            <button class="chat-popup-close btn-close-emoji-sub">✕</button>
                         </div>
                         <div class="chat-popup-body chat-scroll-area" style="padding: 16px;">
                             <div class="persona-form">
@@ -1336,7 +1445,7 @@ window.ChatAppTemplate = `
                     <div class="chat-popup-content" style="max-width: 400px; width: 90%; height: 80%; max-height: 500px; display: flex; flex-direction: column;">
                         <div class="chat-popup-header">
                             <h3 class="chat-popup-title">批量/文档导入</h3>
-                            <button class="chat-popup-close btn-close-popup">✕</button>
+                            <button class="chat-popup-close btn-close-emoji-sub">✕</button>
                         </div>
                         <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; display: flex; flex-direction: column;">
                             <div class="persona-form" style="flex: 1; display: flex; flex-direction: column;">
@@ -1364,7 +1473,7 @@ window.ChatAppTemplate = `
                     <div class="chat-popup-content" style="max-width: 320px;">
                         <div class="chat-popup-header">
                             <h3 class="chat-popup-title" id="emoji-move-title">移动到分组</h3>
-                            <button class="chat-popup-close btn-close-popup">✕</button>
+                            <button class="chat-popup-close btn-close-emoji-sub">✕</button>
                         </div>
                         <div class="chat-popup-body" style="padding: 16px;">
                             <div class="persona-form-group" style="margin: 0;">
@@ -1373,6 +1482,185 @@ window.ChatAppTemplate = `
                         </div>
                         <div class="chat-popup-footer">
                             <button class="chat-btn-primary" id="btn-confirm-move-emojis" style="width: 100%;">确认移动</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 22. 表情包分组操作弹窗 -->
+                <div class="chat-popup-overlay" id="chat-emoji-group-action-popup" style="z-index: 1030; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">管理分组</h3>
+                            <button class="chat-popup-close btn-close-emoji-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body" style="padding: 16px;">
+                            <div class="persona-form-group" style="margin: 0;">
+                                <label>重命名分组</label>
+                                <input type="text" id="emoji-group-action-name" class="persona-input" placeholder="输入新的分组名称">
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer" style="display: flex; gap: 8px;">
+                            <button class="chat-btn-danger" id="btn-emoji-group-delete" style="flex: 1;">删除分组</button>
+                            <button class="chat-btn-primary" id="btn-emoji-group-save" style="flex: 1;">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 23. 角色专属表情包管理弹窗 -->
+                <div class="chat-popup-overlay" id="chat-char-emoji-manage-popup" style="z-index: 1040; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 500px; width: 90%; height: 85%; max-height: 600px; display: flex; flex-direction: column;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">管理角色表情包</h3>
+                            <div class="chat-popup-actions" style="display: flex; align-items: center;">
+                                <button class="chat-btn-text" id="btn-manage-char-emojis-multi" style="margin-right: 8px;">多选</button>
+                                <button class="chat-popup-close btn-close-char-emoji-sub">✕</button>
+                            </div>
+                        </div>
+                        <div class="chat-popup-body" style="flex: 1; display: flex; overflow: hidden; padding: 0;">
+                            <!-- 左侧：分组列表 -->
+                            <div style="width: 100px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: #f9f9f9; flex-shrink: 0;">
+                                <div class="chat-scroll-area" id="char-emoji-manage-groups" style="flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 4px;">
+                                    <!-- 动态生成分组 -->
+                                </div>
+                                <button class="chat-btn-text" id="btn-add-char-emoji-group" style="padding: 12px 8px; font-size: 13px; color: var(--text-color); border-top: 1px solid var(--border-color); border-radius: 0; display: flex; align-items: center; justify-content: center; gap: 4px;"><i class="ph ph-plus"></i> 新建</button>
+                            </div>
+                            
+                            <!-- 右侧：表情列表和搜索 -->
+                            <div style="flex: 1; display: flex; flex-direction: column; padding: 12px; overflow: hidden;">
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-shrink: 0;">
+                                    <div style="position: relative; flex: 1;">
+                                        <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 14px;"></i>
+                                        <input type="text" id="char-emoji-manage-search" placeholder="搜索角色表情..." style="width: 100%; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px 6px 30px; font-size: 13px; color: #18181b; outline: none; box-sizing: border-box;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-shrink: 0;">
+                                    <button class="chat-btn-outline" id="btn-add-char-emoji-single" style="flex: 1; padding: 6px; font-size: 12px;"><i class="ph ph-plus"></i> 单个添加</button>
+                                    <button class="chat-btn-outline" id="btn-add-char-emoji-batch" style="flex: 1; padding: 6px; font-size: 12px;"><i class="ph ph-list-plus"></i> 批量导入</button>
+                                    <button class="chat-btn-outline" id="btn-manage-char-group-actions" style="padding: 6px; font-size: 13px; width: 32px;" title="当前分组操作"><i class="ph ph-dots-three"></i></button>
+                                </div>
+                                <div class="chat-scroll-area" style="flex: 1;">
+                                    <div id="char-emoji-manage-list" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; align-content: flex-start;">
+                                        <!-- 动态生成 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer" id="char-emoji-manage-footer" style="display: none; gap: 8px; flex-wrap: wrap;">
+                            <button class="chat-btn-outline" id="btn-select-all-char-emojis" style="flex: 1; font-size: 13px; padding: 8px;">全选</button>
+                            <button class="chat-btn-outline" id="btn-move-selected-char-emojis" style="flex: 1; font-size: 13px; padding: 8px;">移动</button>
+                            <button class="chat-btn-danger" id="btn-delete-selected-char-emojis" style="flex: 1.5; background-color: #FF3B30; color: white; font-size: 13px; padding: 8px;" disabled>删除 (0)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 24. 单个添加角色表情弹窗 -->
+                <div class="chat-popup-overlay" id="chat-char-emoji-single-popup" style="z-index: 1050; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title" id="char-emoji-single-title">添加角色表情</h3>
+                            <button class="chat-popup-close btn-close-char-emoji-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="padding: 16px;">
+                            <div class="persona-form">
+                                <div class="persona-form-group">
+                                    <label>表情名称 (必填)</label>
+                                    <input type="text" id="char-emoji-single-name" class="persona-input" placeholder="例如：开心">
+                                </div>
+                                <div class="persona-form-group">
+                                    <label>所属分组</label>
+                                    <select id="char-emoji-single-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                                </div>
+                                <div class="persona-form-group">
+                                    <label>图片链接</label>
+                                    <input type="text" id="char-emoji-single-url" class="persona-input" placeholder="输入网络图片URL">
+                                    <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
+                                    <button class="chat-btn-outline" id="btn-char-emoji-single-upload" style="width: 100%;"><i class="ph ph-upload-simple"></i> 选择本地图片</button>
+                                    <input type="file" id="input-char-emoji-single-upload" accept="image/*" style="display: none;">
+                                </div>
+                                <div id="char-emoji-single-preview-container" style="display: none; text-align: center; margin-top: 12px;">
+                                    <img id="char-emoji-single-preview" src="" style="max-width: 80px; max-height: 80px; border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-save-char-emoji-single" style="width: 100%;">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 25. 批量导入角色表情弹窗 -->
+                <div class="chat-popup-overlay" id="chat-char-emoji-batch-popup" style="z-index: 1050; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 400px; width: 90%; height: 80%; max-height: 500px; display: flex; flex-direction: column;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">批量/文档导入角色表情</h3>
+                            <button class="chat-popup-close btn-close-char-emoji-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; display: flex; flex-direction: column;">
+                            <div class="persona-form" style="flex: 1; display: flex; flex-direction: column;">
+                                <div class="persona-form-group" style="margin-bottom: 12px;">
+                                    <label>导入到分组</label>
+                                    <select id="char-emoji-batch-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                                </div>
+                                <div class="persona-form-group" style="flex: 1; display: flex; flex-direction: column;">
+                                    <label>粘贴文本 (智能识别：前面是名字，后面是链接，支持任意符号分隔)</label>
+                                    <textarea id="char-emoji-batch-text" class="persona-textarea" placeholder="开心: https://xxx.jpg&#10;大笑 | https://xxx.jpg&#10;委屈——https://xxx.jpg&#10;愤怒，https://xxx.jpg" style="flex: 1; min-height: 150px; font-family: monospace; white-space: pre;"></textarea>
+                                </div>
+                                <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
+                                <button class="chat-btn-outline" id="btn-char-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX 文档</button>
+                                <input type="file" id="input-char-emoji-batch-upload" accept=".txt,.doc,.docx" style="display: none;">
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-save-char-emoji-batch" style="width: 100%;">解析并导入</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 25.1. 角色表情包移动分组弹窗 -->
+                <div class="chat-popup-overlay" id="chat-char-emoji-move-popup" style="z-index: 1060; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title" id="char-emoji-move-title">移动到分组</h3>
+                            <button class="chat-popup-close btn-close-char-emoji-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body" style="padding: 16px;">
+                            <div class="persona-form-group" style="margin: 0;">
+                                <select id="char-emoji-move-target-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-confirm-move-char-emojis" style="width: 100%;">确认移动</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 25.2. 角色表情包分组操作弹窗 -->
+                <div class="chat-popup-overlay" id="chat-char-emoji-group-action-popup" style="z-index: 1060; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">管理角色分组</h3>
+                            <button class="chat-popup-close btn-close-char-emoji-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body" style="padding: 16px; max-height: 400px; overflow-y: auto;">
+                            <div class="persona-form-group" style="margin-bottom: 16px;">
+                                <label>重命名分组</label>
+                                <input type="text" id="char-emoji-group-action-name" class="persona-input" placeholder="输入新的分组名称">
+                            </div>
+                            
+                            <div class="persona-form-group" style="margin: 0;">
+                                <label>适用范围 (在此分组下的表情均遵循此范围)</label>
+                                <select id="char-emoji-group-target-type" class="persona-input" style="appearance: auto; cursor: pointer; margin-bottom: 8px;">
+                                    <option value="global">所有角色均可使用</option>
+                                    <option value="specific">指定角色专属</option>
+                                </select>
+                                <div id="char-emoji-group-target-chars" style="display: none; flex-wrap: wrap; gap: 6px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                                    <!-- Checkboxes for characters generated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer" style="display: flex; gap: 8px;">
+                            <button class="chat-btn-danger" id="btn-char-emoji-group-delete" style="flex: 1;">删除分组</button>
+                            <button class="chat-btn-primary" id="btn-char-emoji-group-save" style="flex: 1;">保存</button>
                         </div>
                     </div>
                 </div>
