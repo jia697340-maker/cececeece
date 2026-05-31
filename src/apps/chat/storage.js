@@ -35,6 +35,14 @@ window.ChatStorage = {
         return JSON.parse(localStorage.getItem('nrj-chat-characters') || '[]');
     },
     
+    loadCharListGroups: function() {
+        return JSON.parse(localStorage.getItem('nrj-chat-list-groups') || '[]');
+    },
+
+    saveCharListGroups: function(groups) {
+        localStorage.setItem('nrj-chat-list-groups', JSON.stringify(groups));
+    },
+
     loadCharEmojiGroups: function() {
         return JSON.parse(localStorage.getItem('nrj-chat-char-emoji-groups') || '[]');
     },

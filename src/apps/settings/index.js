@@ -104,6 +104,37 @@ window.SystemApps['settings'] = {
                         </div>
                     </div>
 
+                    <!-- 弹窗界面 Section -->
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">弹窗界面</h2>
+                        <div class="live-preview-area" style="margin-bottom: 16px;">
+                            <div class="live-preview-box" id="modal-bg-preview"></div>
+                            <p class="live-preview-label">全局弹窗壁纸预览</p>
+                        </div>
+                        <div class="settings-card">
+                            <div class="settings-item" id="btn-change-modal-bg">
+                                <div class="settings-item-icon">
+                                    <i class="ph-bold ph-image"></i>
+                                </div>
+                                <div class="settings-item-content">
+                                    <p class="settings-item-title">更换弹窗壁纸</p>
+                                </div>
+                                <div class="settings-item-right">
+                                    <span class="settings-item-value">本地图库</span>
+                                    <i class="ph-bold ph-caret-right settings-item-arrow"></i>
+                                </div>
+                            </div>
+                            <div class="settings-item" id="btn-reset-modal-bg">
+                                <div class="settings-item-icon">
+                                    <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                                </div>
+                                <div class="settings-item-content">
+                                    <p class="settings-item-title" style="color: #ef4444;">重置弹窗壁纸</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 应用图标 Section -->
                     <div class="settings-section">
                         <h2 class="settings-section-title">应用图标</h2>
@@ -896,6 +927,67 @@ window.SystemApps['settings'] = {
                     }
                 } catch (error) {
                     console.error("重置全局聊天壁纸失败:", error);
+                }
+            });
+        }
+
+        // 弹窗壁纸设置
+        const btnChangeModalBg = container.querySelector('#btn-change-modal-bg');
+        const btnResetModalBg = container.querySelector('#btn-reset-modal-bg');
+        const modalBgPreview = container.querySelector('#modal-bg-preview');
+
+        // 初始化预览图
+        const loadModalBgPreview = async () => {
+            if (modalBgPreview && window.ImageStorageManager) {
+                try {
+                    const url = await window.ImageStorageManager.loadFromIndexedDB('modal-bg');
+                    if (url) {
+                        modalBgPreview.style.backgroundImage = `url(${url})`;
+                    } else {
+                        modalBgPreview.style.backgroundImage = 'none';
+                    }
+                } catch(e) {
+                    console.error('加载弹窗壁纸预览失败:', e);
+                }
+            }
+        };
+        loadModalBgPreview();
+
+        if(btnChangeModalBg) {
+            btnChangeModalBg.addEventListener('click', () => {
+                if (typeof showImageModal === 'function') {
+                    showImageModal('modal-bg', async (result) => {
+                        if (result && result.type === 'reset') {
+                            if(window.ImageStorageManager) {
+                                await window.ImageStorageManager.deleteFromIndexedDB('modal-bg');
+                                if (modalBgPreview) modalBgPreview.style.backgroundImage = 'none';
+                                if (window.applyModalWallpaper) window.applyModalWallpaper(null);
+                            }
+                        } else if (result && result.url) {
+                            if(window.ImageStorageManager) {
+                                await window.ImageStorageManager.saveToIndexedDB('modal-bg', result.url);
+                                if (modalBgPreview) modalBgPreview.style.backgroundImage = `url(${result.url})`;
+                                if (window.applyModalWallpaper) window.applyModalWallpaper(result.url);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if(btnResetModalBg) {
+            btnResetModalBg.addEventListener('click', async () => {
+                try {
+                    if(window.ImageStorageManager) {
+                        await window.ImageStorageManager.deleteFromIndexedDB('modal-bg');
+                        if (modalBgPreview) modalBgPreview.style.backgroundImage = 'none';
+                        if (window.applyModalWallpaper) window.applyModalWallpaper(null);
+                        if (typeof showCustomModal === 'function') {
+                            showCustomModal('重置成功', '弹窗壁纸已清除。', false, '', () => {});
+                        }
+                    }
+                } catch (error) {
+                    console.error("重置弹窗壁纸失败:", error);
                 }
             });
         }

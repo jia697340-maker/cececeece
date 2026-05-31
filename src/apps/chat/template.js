@@ -88,6 +88,138 @@ window.ChatAppTemplate = `
                 border-color: #18181b;
                 color: #ffffff;
             }
+            /* 顶栏美化：电波风格 */
+            .chat-header-wave-style {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+            .wave-avatar-box {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            }
+            .wave-avatar-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .wave-line-container {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                height: 20px;
+            }
+            .wave-line {
+                width: 3px;
+                background-color: var(--accent-color, #111);
+                border-radius: 2px;
+                animation: wave-anim 1s infinite ease-in-out;
+            }
+            .wave-line:nth-child(1) { animation-delay: 0s; height: 8px; }
+            .wave-line:nth-child(2) { animation-delay: 0.2s; height: 16px; }
+            .wave-line:nth-child(3) { animation-delay: 0.4s; height: 8px; }
+
+            @keyframes wave-anim {
+                0%, 100% { transform: scaleY(1); }
+                50% { transform: scaleY(1.5); }
+            }
+
+            /* 顶栏美化：心电波风格 */
+            .chat-header-ecg-style {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            .ecg-avatar-box {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            }
+            .ecg-avatar-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .ecg-line-container {
+                width: 60px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .ecg-line {
+                width: 60px;
+                height: 24px;
+                background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='24' viewBox='0 0 60 24'><path d='M0,12 L15,12 L20,8 L25,20 L30,4 L35,16 L40,12 L60,12' stroke='%23ff3b30' stroke-width='1.5' fill='none' stroke-linejoin='round' /></svg>");
+                background-repeat: no-repeat;
+                background-position: center;
+                transform-origin: center;
+                animation: ecg-pulse-anim 1.2s infinite;
+            }
+
+            @keyframes ecg-pulse-anim {
+                0%, 100% { transform: scale(1, 1); opacity: 0.8; }
+                10% { transform: scale(1.05, 1.3); opacity: 1; }
+                20% { transform: scale(0.95, 0.8); opacity: 0.9; }
+                30% { transform: scale(1.02, 1.1); opacity: 1; }
+                40% { transform: scale(1, 1); opacity: 0.8; }
+            }
+
+            /* 顶栏美化：拍立得风格 */
+            .chat-header-polaroid-style {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: absolute;
+                top: -50px;
+                left: 50%;
+                transform: translateX(-50%);
+                pointer-events: none;
+                z-index: 100;
+            }
+            .polaroid-string {
+                width: 2px;
+                height: 1000px;
+                margin-top: -944px;
+                background: #d1d1d6;
+                box-shadow: -1px 0 2px rgba(0,0,0,0.1);
+            }
+            .polaroid-frame {
+                pointer-events: auto;
+                background: #fff;
+                padding: 5px 5px 16px 5px;
+                box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+                border-radius: 2px;
+                cursor: pointer;
+                transform: rotate(-4deg);
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                width: 48px;
+                height: 56px;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+            }
+            .polaroid-frame:hover {
+                transform: rotate(0deg) scale(1.05);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            }
+            .polaroid-frame img {
+                width: 100%;
+                height: 36px;
+                object-fit: cover;
+                background-color: #f4f4f5;
+                border: 1px solid rgba(0,0,0,0.05);
+            }
+
             /* 会话置顶样式 */
             .chat-list-item-wrapper.pinned .chat-list-item {
                 background-color: rgba(0,0,0,0.03);
@@ -164,10 +296,42 @@ window.ChatAppTemplate = `
                         <div class="chat-search-container">
                             <input type="text" class="chat-search-input" placeholder="搜索联系人或消息...">
                         </div>
-       
+                        
+                        <div id="chat-list-group-tabs" style="display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; scrollbar-width: none;">
+                            <!-- 动态生成分组标签 -->
+                        </div>
        
                         <div class="chat-scroll-area" id="chat-list-container">
                             <!-- 动态生成聊天列表 -->
+                        </div>
+                    </div>
+
+                    <!-- 新增：联系人页 -->
+                    <div class="chat-view" id="chat-view-contacts">
+                        <div class="chat-search-container">
+                            <input type="text" class="chat-search-input" id="chat-contacts-search" placeholder="搜索联系人...">
+                        </div>
+                        <div class="chat-scroll-area">
+                            <!-- 功能入口 -->
+                            <div class="chat-contacts-features" style="padding: 0 16px 8px;">
+                                <div class="contacts-feature-item" id="btn-contacts-new-friend" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+                                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(120, 120, 128, 0.08); color: var(--text-color); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                        <i class="ph ph-user-plus"></i>
+                                    </div>
+                                    <span style="font-size: 15px; font-weight: 500; color: var(--text-color);">新的朋友</span>
+                                </div>
+                                <div class="contacts-feature-item" id="btn-contacts-group" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+                                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(120, 120, 128, 0.08); color: var(--text-color); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                        <i class="ph ph-users-three"></i>
+                                    </div>
+                                    <span style="font-size: 15px; font-weight: 500; color: var(--text-color);">群聊</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 联系人列表容器 -->
+                            <div id="chat-contacts-container" style="padding-bottom: 20px;">
+                                <!-- 动态生成分组及联系人 -->
+                            </div>
                         </div>
                     </div>
 
@@ -254,6 +418,9 @@ window.ChatAppTemplate = `
                         <button class="chat-nav-pill active" data-target="chat-view-messages">
                             聊天
                             <span class="chat-nav-badge">7</span>
+                        </button>
+                        <button class="chat-nav-pill" data-target="chat-view-contacts">
+                            联系人
                         </button>
                         <button class="chat-nav-pill" data-target="chat-view-dynamic">
                             动态
@@ -364,7 +531,7 @@ window.ChatAppTemplate = `
                                 <div class="chat-create-menu-item" id="btn-import-character"><div class="chat-create-menu-icon"><i class="ph ph-file-arrow-down"></i></div><span>导入角色卡</span></div>
                                 <div class="chat-create-menu-item"><div class="chat-create-menu-icon"><i class="ph ph-address-book"></i></div><span>添加好友</span></div>
                             </div>
-                            <input type="file" id="char-import-upload" accept=".png,.json" style="display: none;">
+                            <input type="file" id="char-import-upload" accept=".png,.json,.zip" style="display: none;">
                         </div>
                     </div>
                 </div>
@@ -387,7 +554,7 @@ window.ChatAppTemplate = `
                                     <span>导入文档创建 (.txt, .docx)</span>
                                 </div>
                             </div>
-                            <input type="file" id="char-document-upload" accept=".txt,.doc,.docx" style="display: none;">
+                            <input type="file" id="char-document-upload" accept=".txt,.doc,.docx,.zip" style="display: none;">
                         </div>
                     </div>
                 </div>
@@ -452,6 +619,10 @@ window.ChatAppTemplate = `
                                     <input type="text" id="character-edit-nickname" class="persona-input" placeholder="输入列表展示备注名">
                                 </div>
                                 <div class="persona-form-group">
+                                    <label>所属分组</label>
+                                    <select id="character-edit-group" class="persona-input" style="appearance: auto; cursor: pointer;"></select>
+                                </div>
+                                <div class="persona-form-group">
                                     <label>
                                         <span>人设</span>
                                     </label>
@@ -502,11 +673,12 @@ window.ChatAppTemplate = `
                             <button class="chat-popup-close btn-close-popup">✕</button>
                         </div>
 
-                        <div class="chat-popup-tabs">
-                            <div class="chat-popup-tab active" data-tab="cs-tab-role">角色</div>
-                            <div class="chat-popup-tab" data-tab="cs-tab-user">我的身份</div>
-                            <div class="chat-popup-tab" data-tab="cs-tab-memory">记忆与设定</div>
-                            <div class="chat-popup-tab" data-tab="cs-tab-appearance">美化</div>
+                        <div class="chat-popup-tabs" style="overflow-x: auto; flex-wrap: nowrap;">
+                            <div class="chat-popup-tab active" data-tab="cs-tab-role" style="flex-shrink: 0;">角色</div>
+                            <div class="chat-popup-tab" data-tab="cs-tab-user" style="flex-shrink: 0;">我的身份</div>
+                            <div class="chat-popup-tab" data-tab="cs-tab-memory" style="flex-shrink: 0;">记忆与设定</div>
+                            <div class="chat-popup-tab" data-tab="cs-tab-appearance" style="flex-shrink: 0;">美化</div>
+                            <div class="chat-popup-tab" data-tab="cs-tab-api-history" style="flex-shrink: 0;">API 历史</div>
                         </div>
 
                         <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; background-color: var(--app-bg);">
@@ -558,6 +730,15 @@ window.ChatAppTemplate = `
                                         <button class="chat-btn-text" id="btn-reset-multi-msg-delay" style="font-size: 13px; padding: 2px 4px; color: #007AFF;">重置</button>
                                         <span style="font-size: 12px; color: var(--text-secondary); margin-left: 4px;">多条消息发出时的等待时间</span>
                                     </div>
+
+                                    <label class="toggle-switch-ios" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: normal; color: var(--text-color); cursor: pointer; margin-bottom: 12px; width: fit-content;">
+                                        <span style="user-select: none; white-space: nowrap;">启用双语翻译</span>
+                                        <div style="position: relative; width: 36px; height: 20px; flex-shrink: 0;">
+                                            <input type="checkbox" id="cs-char-bilingual-toggle" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                                            <span class="ios-slider"></span>
+                                        </div>
+                                    </label>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; margin-top: -6px;">开启后，AI回复外语时将自动生成隐藏翻译，点击气泡可查看。</div>
 
                                     <label class="toggle-switch-ios" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: normal; color: var(--text-color); cursor: pointer; margin-bottom: 12px; width: fit-content;">
                                         <span style="user-select: none; white-space: nowrap;">控制角色回复条数</span>
@@ -620,7 +801,7 @@ window.ChatAppTemplate = `
                                         <span id="cs-user-persona-selected-text">默认全局身份</span>
                                         <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-user-persona-caret"></i>
                                     </div>
-                                    <div id="cs-user-persona-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 42px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                    <div id="cs-user-persona-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 42px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                     </div>
                                     <input type="hidden" id="cs-user-persona-select" value="">
                                 </div>
@@ -683,7 +864,7 @@ window.ChatAppTemplate = `
                                     </div>
                                     
                                     <!-- 自定义下拉选项面板 -->
-                                        <div id="cs-worldbook-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-worldbook-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         <!-- 动态选项 -->
                                     </div>
                                     
@@ -770,6 +951,41 @@ window.ChatAppTemplate = `
                                     </button>
                                 </div>
                             </div>
+                            
+                            <!-- API 历史 -->
+                            <div id="cs-tab-api-history" class="chat-popup-tab-content">
+                                <div style="background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                        <h4 style="font-size: 14px; font-weight: 600; color: var(--text-color); margin: 0;">API 调用记录</h4>
+                                        <label class="toggle-switch-ios" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: normal; color: var(--text-color); cursor: pointer;">
+                                            <span style="user-select: none; white-space: nowrap; font-size: 12px; color: var(--text-secondary);">记录 API 历史</span>
+                                            <div style="position: relative; width: 36px; height: 20px; flex-shrink: 0;">
+                                                <input type="checkbox" id="cs-api-history-toggle" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                                                <span class="ios-slider"></span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: rgba(120, 120, 128, 0.08); border-radius: 8px; padding: 10px 12px;">
+                                        <span style="font-size: 13px; color: var(--text-color);">保留最近记录条数</span>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" id="cs-api-history-limit" class="persona-input" placeholder="例如: 50" value="50" min="10" max="500" style="width: 70px; padding: 6px 10px; min-height: unset; margin: 0; font-size: 13px;">
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                                        <button class="chat-btn-outline" id="btn-api-history-select-all" style="flex: 1; padding: 6px 0; font-size: 12px; min-width: 60px;">全选</button>
+                                        <button class="chat-btn-outline" id="btn-api-history-export-selected" style="flex: 1; padding: 6px 0; font-size: 12px; min-width: 70px;" disabled>导出所选</button>
+                                        <button class="chat-btn-outline" id="btn-api-history-delete-selected" style="flex: 1; padding: 6px 0; font-size: 12px; color: #FF3B30; border-color: rgba(255, 59, 48, 0.3); min-width: 70px;" disabled>删除所选</button>
+                                        <button class="chat-btn-outline" id="btn-api-history-clear-all" style="flex: 1; padding: 6px 0; font-size: 12px; color: #FF3B30; border-color: rgba(255, 59, 48, 0.3); min-width: 70px;">全部清空</button>
+                                    </div>
+
+                                    <div id="cs-api-history-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: #fafafa;">
+                                        <!-- 动态生成 API 历史列表 -->
+                                        <div style="text-align: center; color: var(--text-secondary); font-size: 12px; padding: 20px 0;">暂无记录</div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- 美化 -->
                             <div id="cs-tab-appearance" class="chat-popup-tab-content">
@@ -801,7 +1017,7 @@ window.ChatAppTemplate = `
                                     <div class="persona-form-group" style="margin-bottom: 16px;">
                                         <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
                                             <span><i class="ph ph-image"></i> 聊天壁纸</span>
-                                            <button class="chat-btn-text" id="btn-clear-chat-bg" style="font-size: 12px; padding: 2px; color: #FF3B30; display: none;">清除</button>
+                                            <button class="chat-btn-text" id="btn-clear-chat-bg" style="font-size: 12px; padding: 2px; color: #FF3B30;">重置</button>
                                         </label>
                                         
                                         <div style="display: flex; gap: 12px; align-items: flex-start; margin-top: 8px;">
@@ -829,7 +1045,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-avatar-display-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-avatar-display-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-avatar-display-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-avatar-display-select" value="hide_me">
@@ -858,6 +1074,64 @@ window.ChatAppTemplate = `
 
                                     <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
                                         <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+                                            <span><i class="ph ph-minus"></i> 顶栏样式</span>
+                                        </label>
+                                        
+                                        <div id="cs-topbar-style-dropdown-trigger" style="background-color: var(--app-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+                                            <span id="cs-topbar-style-selected-text">默认极简</span>
+                                            <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-topbar-style-caret"></i>
+                                        </div>
+                                        
+                                        <div id="cs-topbar-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        </div>
+                                        
+                                        <input type="hidden" id="cs-topbar-style-select" value="default">
+                                    </div>
+
+                                    <!-- 极简模式：拍立得设置项 (默认隐藏) -->
+                                    <div id="cs-polaroid-settings-container" style="display: none; margin-bottom: 16px; padding: 12px; background: rgba(120, 120, 128, 0.08); border-radius: 12px;">
+                                        <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">附挂拍立得位置</span>
+                                        </label>
+                                        <select id="cs-polaroid-position" class="persona-input" style="appearance: auto; cursor: pointer; margin-bottom: 12px; font-size: 13px;">
+                                            <option value="none">不显示</option>
+                                            <option value="left">靠左挂载</option>
+                                            <option value="right">靠右挂载</option>
+                                        </select>
+
+                                        <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">附挂拍立得缩放大小</span>
+                                            <span id="cs-polaroid-size-val" style="font-size: 12px; color: var(--text-secondary);">100%</span>
+                                        </label>
+                                        <input type="range" id="cs-polaroid-size-range" min="0" max="2000" value="100" style="width: 100%; margin-bottom: 8px;">
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="number" id="cs-polaroid-size-input" class="persona-input" value="100" style="flex: 1; padding: 6px; min-height: unset; margin: 0; text-align: center; font-size: 13px;">
+                                            <button class="chat-btn-text" id="btn-reset-polaroid-size" style="font-size: 12px; padding: 0 8px; color: #007AFF;">重置</button>
+                                        </div>
+
+                                        <label style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">水平偏移 (X轴)</span>
+                                            <span id="cs-polaroid-x-val" style="font-size: 12px; color: var(--text-secondary);">0px</span>
+                                        </label>
+                                        <input type="range" id="cs-polaroid-x-range" min="-5000" max="5000" value="0" style="width: 100%; margin-bottom: 8px;">
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="number" id="cs-polaroid-x-input" class="persona-input" value="0" style="flex: 1; padding: 6px; min-height: unset; margin: 0; text-align: center; font-size: 13px;">
+                                            <button class="chat-btn-text" id="btn-reset-polaroid-x" style="font-size: 12px; padding: 0 8px; color: #007AFF;">重置</button>
+                                        </div>
+
+                                        <label style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">垂直偏移 (Y轴)</span>
+                                            <span id="cs-polaroid-y-val" style="font-size: 12px; color: var(--text-secondary);">0px</span>
+                                        </label>
+                                        <input type="range" id="cs-polaroid-y-range" min="-5000" max="5000" value="0" style="width: 100%; margin-bottom: 8px;">
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="number" id="cs-polaroid-y-input" class="persona-input" value="0" style="flex: 1; padding: 6px; min-height: unset; margin: 0; text-align: center; font-size: 13px;">
+                                            <button class="chat-btn-text" id="btn-reset-polaroid-y" style="font-size: 12px; padding: 0 8px; color: #007AFF;">重置</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
+                                        <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
                                             <span><i class="ph ph-chat-circle"></i> 气泡样式</span>
                                         </label>
                                         
@@ -866,10 +1140,26 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-bubble-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-bubble-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-bubble-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-bubble-style-select" value="default">
+                                    </div>
+
+                                    <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
+                                        <label style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+                                            <span><i class="ph ph-translate"></i> 翻译显示位置</span>
+                                        </label>
+                                        
+                                        <div id="cs-translation-pos-dropdown-trigger" style="background-color: var(--app-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+                                            <span id="cs-translation-pos-selected-text">在气泡内</span>
+                                            <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-translation-pos-caret"></i>
+                                        </div>
+                                        
+                                        <div id="cs-translation-pos-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        </div>
+                                        
+                                        <input type="hidden" id="cs-translation-pos-select" value="inside">
                                     </div>
 
                                     <div class="persona-form-group" style="margin-bottom: 16px; position: relative;">
@@ -882,7 +1172,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-quote-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-quote-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-quote-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-quote-style-select" value="inside">
@@ -941,7 +1231,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-msg-time-pos-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-msg-time-pos-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-msg-time-pos-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-msg-time-pos-select" value="none">
@@ -957,7 +1247,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-msg-time-format-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-msg-time-format-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-msg-time-format-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-msg-time-format-select" value="hm">
@@ -1022,7 +1312,7 @@ window.ChatAppTemplate = `
                                             <i class="ph ph-caret-down" style="color: var(--text-secondary); transition: transform 0.3s;" id="cs-typing-style-caret"></i>
                                         </div>
                                         
-                                        <div id="cs-typing-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: var(--app-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
+                                        <div id="cs-typing-style-options-panel" style="display: none; position: absolute; left: 0; right: 0; top: 76px; background-color: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999; max-height: 200px; overflow-y: auto; padding: 4px; font-size: 14px;">
                                         </div>
                                         
                                         <input type="hidden" id="cs-typing-style-select" value="both">
@@ -1039,7 +1329,7 @@ window.ChatAppTemplate = `
                     <div class="chat-popup-content" style="height: 85%; max-height: 600px; display: flex; flex-direction: column;">
                         <div class="chat-popup-header">
                             <h3 class="chat-popup-title">记忆库</h3>
-                            <button class="chat-popup-close btn-close-popup">✕</button>
+                            <button class="chat-popup-close btn-close-memory-sub">✕</button>
                         </div>
                         <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; background-color: var(--app-bg);">
                             <div id="memory-list-container" style="display: flex; flex-direction: column; gap: 12px;">
@@ -1059,7 +1349,7 @@ window.ChatAppTemplate = `
                     <div class="chat-popup-content">
                         <div class="chat-popup-header">
                             <h3 class="chat-popup-title">编辑记忆</h3>
-                            <button class="chat-popup-close btn-close-popup">✕</button>
+                            <button class="chat-popup-close btn-close-memory-sub">✕</button>
                         </div>
                         <div class="chat-popup-body chat-scroll-area">
                             <div class="persona-form">
@@ -1133,12 +1423,51 @@ window.ChatAppTemplate = `
                             <button class="chat-conv-back-btn" id="chat-conv-back">
                                 <i class="ph ph-caret-left"></i>
                             </button>
-                            <div class="chat-conv-title-box">
-                                <div class="chat-conv-title-top">
-                                    <span class="chat-conv-name" id="chat-conv-name">角色名称</span>
-                                    <div class="chat-conv-status-dot" id="chat-conv-status-dot"></div>
+                            <div class="chat-conv-title-box" style="position: relative; flex: 1; display: flex; justify-content: center;">
+                                <!-- 默认样式 -->
+                                <div id="chat-conv-title-default" style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chat-conv-title-top">
+                                        <span class="chat-conv-name" id="chat-conv-name">角色名称</span>
+                                        <div class="chat-conv-status-dot" id="chat-conv-status-dot"></div>
+                                    </div>
+                                    <span class="chat-conv-status-text" id="chat-conv-status-text">ACTIVE NOW</span>
                                 </div>
-                                <span class="chat-conv-status-text" id="chat-conv-status-text">ACTIVE NOW</span>
+
+                                <!-- 电波连线风格 -->
+                                <div id="chat-conv-title-wave" class="chat-header-wave-style" style="display: none;">
+                                    <div class="wave-avatar-box">
+                                        <img id="chat-wave-user-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                                    </div>
+                                    <div class="wave-line-container">
+                                        <div class="wave-line"></div>
+                                        <div class="wave-line"></div>
+                                        <div class="wave-line"></div>
+                                    </div>
+                                    <div class="wave-avatar-box">
+                                        <img id="chat-wave-char-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                                    </div>
+                                </div>
+
+                                <!-- 心电波连线风格 -->
+                                <div id="chat-conv-title-ecg" class="chat-header-ecg-style" style="display: none;">
+                                    <div class="ecg-avatar-box">
+                                        <img id="chat-ecg-user-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                                    </div>
+                                    <div class="ecg-line-container">
+                                        <div class="ecg-line"></div>
+                                    </div>
+                                    <div class="ecg-avatar-box">
+                                        <img id="chat-ecg-char-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                                    </div>
+                                </div>
+
+                                <!-- 拍立得吊坠风格 -->
+                                <div id="chat-conv-title-polaroid" class="chat-header-polaroid-style" style="display: none;">
+                                    <div class="polaroid-string"></div>
+                                    <div class="polaroid-frame" id="chat-polaroid-frame" title="点击更换照片">
+                                        <img id="chat-polaroid-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                                    </div>
+                                </div>
                             </div>
                             <button class="chat-conv-more-btn">
                                 <i class="ph ph-dots-three"></i>
@@ -1203,8 +1532,11 @@ window.ChatAppTemplate = `
                 <div class="chat-message-select-bar" id="chat-session-select-bar">
                     <button class="chat-select-bar-btn" id="btn-session-select-cancel">取消</button>
                     <div style="display: flex; gap: 4px;">
+                        <button class="chat-select-bar-btn" id="btn-session-select-group" disabled>分组(0)</button>
                         <button class="chat-select-bar-btn" id="btn-session-select-pin" disabled>置顶(0)</button>
                         <button class="chat-select-bar-btn" id="btn-session-select-unpin" disabled style="display:none;">取消置顶(0)</button>
+                        <button class="chat-select-bar-btn" id="btn-session-select-read" disabled style="display:none;">标为已读(0)</button>
+                        <button class="chat-select-bar-btn" id="btn-session-select-unread" disabled style="display:none;">标为未读(0)</button>
                         <button class="chat-select-bar-btn danger" id="btn-session-select-delete" disabled>删除(0)</button>
                     </div>
                     <button class="chat-select-bar-btn" id="btn-session-select-all">全选</button>
@@ -1224,11 +1556,26 @@ window.ChatAppTemplate = `
                             <span style="font-size: 11px; font-weight: 600;">取消置顶</span>
                         </div>
                         
+                        <div class="msg-menu-item" id="btn-session-group" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-folder" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">分组</span>
+                        </div>
+
                         <div class="msg-menu-item" id="btn-session-select" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
                             <i class="ph ph-list-checks" style="font-size: 20px;"></i>
                             <span style="font-size: 11px; font-weight: 600;">多选</span>
                         </div>
                         
+                        <div class="msg-menu-item" id="btn-session-read" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-envelope-open" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">标为已读</span>
+                        </div>
+                        
+                        <div class="msg-menu-item" id="btn-session-unread" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #3f3f46;" onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='#18181b';" onmouseout="this.style.background='transparent'; this.style.color='#3f3f46';">
+                            <i class="ph ph-envelope-simple" style="font-size: 20px;"></i>
+                            <span style="font-size: 11px; font-weight: 600;">标为未读</span>
+                        </div>
+
                         <div class="msg-menu-item" id="btn-session-delete" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; color: #ef4444;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)';" onmouseout="this.style.background='transparent';">
                             <i class="ph ph-trash" style="font-size: 20px;"></i>
                             <span style="font-size: 11px; font-weight: 600;">删除</span>
@@ -1458,8 +1805,8 @@ window.ChatAppTemplate = `
                                     <textarea id="emoji-batch-text" class="persona-textarea" placeholder="开心: https://xxx.jpg&#10;大笑 | https://xxx.jpg&#10;委屈——https://xxx.jpg&#10;愤怒，https://xxx.jpg" style="flex: 1; min-height: 150px; font-family: monospace; white-space: pre;"></textarea>
                                 </div>
                                 <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
-                                <button class="chat-btn-outline" id="btn-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX 文档</button>
-                                <input type="file" id="input-emoji-batch-upload" accept=".txt,.doc,.docx" style="display: none;">
+                                <button class="chat-btn-outline" id="btn-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX/ZIP</button>
+                                <input type="file" id="input-emoji-batch-upload" accept=".txt,.doc,.docx,.zip" style="display: none;">
                             </div>
                         </div>
                         <div class="chat-popup-footer">
@@ -1606,8 +1953,8 @@ window.ChatAppTemplate = `
                                     <textarea id="char-emoji-batch-text" class="persona-textarea" placeholder="开心: https://xxx.jpg&#10;大笑 | https://xxx.jpg&#10;委屈——https://xxx.jpg&#10;愤怒，https://xxx.jpg" style="flex: 1; min-height: 150px; font-family: monospace; white-space: pre;"></textarea>
                                 </div>
                                 <div style="text-align: center; margin: 12px 0; color: var(--text-secondary); font-size: 12px;">或</div>
-                                <button class="chat-btn-outline" id="btn-char-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX 文档</button>
-                                <input type="file" id="input-char-emoji-batch-upload" accept=".txt,.doc,.docx" style="display: none;">
+                                <button class="chat-btn-outline" id="btn-char-emoji-batch-upload" style="width: 100%;"><i class="ph ph-file-text"></i> 导入 TXT/DOCX/ZIP</button>
+                                <input type="file" id="input-char-emoji-batch-upload" accept=".txt,.doc,.docx,.zip" style="display: none;">
                             </div>
                         </div>
                         <div class="chat-popup-footer">
@@ -1661,6 +2008,77 @@ window.ChatAppTemplate = `
                         <div class="chat-popup-footer" style="display: flex; gap: 8px;">
                             <button class="chat-btn-danger" id="btn-char-emoji-group-delete" style="flex: 1;">删除分组</button>
                             <button class="chat-btn-primary" id="btn-char-emoji-group-save" style="flex: 1;">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 26. 会话分配分组弹窗 -->
+                <div class="chat-popup-overlay" id="chat-session-group-popup" style="z-index: 1060; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">选择分组</h3>
+                            <button class="chat-popup-close btn-close-session-group-sub">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="padding: 16px;">
+                            <div class="persona-form-group" style="margin-bottom: 16px;">
+                                <label>移动到以下分组</label>
+                                <select id="session-group-select" class="persona-input" style="appearance: auto; cursor: pointer; margin-bottom: 8px;"></select>
+                            </div>
+                            <div class="persona-form-group" style="margin-bottom: 0;">
+                                <label>或创建新分组</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="session-group-new-name" class="persona-input" placeholder="输入新分组名称" style="flex: 1; margin: 0;">
+                                    <button class="chat-btn-outline" id="btn-create-session-group" style="padding: 0 12px; white-space: nowrap;">创建</button>
+                                </div>
+                            </div>
+                            <div class="persona-form-group" style="margin-top: 16px;">
+                                <button class="chat-btn-text" id="btn-manage-session-groups" style="width: 100%; color: var(--accent-color); font-size: 13px;"><i class="ph ph-gear"></i> 管理分组</button>
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer">
+                            <button class="chat-btn-primary" id="btn-confirm-session-group" style="width: 100%;">确认移动</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 27. 会话分组管理弹窗 -->
+                <div class="chat-popup-overlay" id="chat-session-group-manage-popup" style="z-index: 1070; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 320px; display: flex; flex-direction: column; max-height: 80vh;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">管理分组</h3>
+                            <div class="chat-popup-actions" style="display: flex; align-items: center;">
+                                <button class="chat-btn-text" id="btn-manage-session-groups-multi" style="margin-right: 8px;">多选</button>
+                                <button class="chat-popup-close btn-close-session-group-manage">✕</button>
+                            </div>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="padding: 16px; flex: 1; overflow-y: auto;">
+                            <div id="session-group-manage-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                        <div class="chat-popup-footer" id="session-group-manage-footer" style="display: none; gap: 8px; flex-wrap: wrap;">
+                            <button class="chat-btn-outline" id="btn-select-all-session-groups" style="flex: 1; font-size: 13px; padding: 8px;">全选</button>
+                            <button class="chat-btn-danger" id="btn-delete-selected-session-groups" style="flex: 1.5; background-color: #FF3B30; color: white; font-size: 13px; padding: 8px;" disabled>删除 (0)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 28. API 历史详情弹窗 -->
+                <div class="chat-popup-overlay" id="chat-api-history-detail-popup" style="z-index: 1080; background-color: rgba(0, 0, 0, 0.4);">
+                    <div class="chat-popup-content" style="max-width: 600px; width: 90%; height: 85%; max-height: 800px; display: flex; flex-direction: column; border-radius: 16px;">
+                        <div class="chat-popup-header">
+                            <h3 class="chat-popup-title">API 记录详情</h3>
+                            <button class="chat-popup-close btn-close-api-history-detail">✕</button>
+                        </div>
+                        <div class="chat-popup-body chat-scroll-area" style="flex: 1; padding: 16px; background-color: #f9f9f9; display: flex; flex-direction: column; gap: 16px;">
+                            <div style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color); padding: 12px;">
+                                <h4 style="font-size: 13px; color: var(--text-color); margin: 0 0 8px 0; font-weight: 600;">Request Data (发送给 AI 的数据)</h4>
+                                <pre id="api-history-detail-req" style="margin: 0; font-family: monospace; font-size: 12px; color: #333; white-space: pre-wrap; word-wrap: break-word; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.05);"></pre>
+                            </div>
+                            <div style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color); padding: 12px;">
+                                <h4 style="font-size: 13px; color: var(--text-color); margin: 0 0 8px 0; font-weight: 600;">Response Data (AI 返回的数据)</h4>
+                                <pre id="api-history-detail-res" style="margin: 0; font-family: monospace; font-size: 12px; color: #333; white-space: pre-wrap; word-wrap: break-word; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.05);"></pre>
+                            </div>
                         </div>
                     </div>
                 </div>

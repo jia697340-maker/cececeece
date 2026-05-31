@@ -143,6 +143,23 @@ window.ChatRender = {
         `;
     },
     
+    // 构建双语翻译 HTML
+    buildTranslationHtml: function(transPosOption, qText) {
+        if (transPosOption === 'inside') {
+            return `
+                <div class="chat-bubble-translation" style="margin-top: 8px; padding-top: 8px; font-size: 13px; border-top: 1px dashed rgba(128,128,128,0.3); color: inherit; opacity: 0.9; word-break: break-all; display: none;">
+                    ${qText}
+                </div>
+            `;
+        } else {
+            return `
+                <div class="chat-bubble-translation-outside" style="margin-top: 2px; padding: 6px 10px; font-size: 12px; border-radius: 6px; background: rgba(0, 0, 0, 0.04); color: var(--text-secondary); word-break: break-all; width: fit-content; max-width: 100%; box-sizing: border-box; display: none;">
+                    ${qText}
+                </div>
+            `;
+        }
+    },
+
     // 生成一条完整的气泡 HTML
     generateBubbleHtml: function(params) {
         const {
@@ -150,7 +167,8 @@ window.ChatRender = {
             charConfig, activeUser,
             quoteStyleOption, bubbleStyle, bColors, voiceWaveEnabled, avatarDisplay,
             charAvatarShape, userAvatarShape,
-            msgTimePos, msgTimeFormat, timeStr
+            msgTimePos, msgTimeFormat, timeStr,
+            translationPosOption
         } = params;
 
         let html = '';
@@ -231,6 +249,16 @@ window.ChatRender = {
 
         let displayText = text;
         let quoteHtml = '';
+        let translationHtml = '';
+
+        // 处理双语翻译
+        const translationRegex = /〖(.*?)〗/g;
+        if (displayText.match(translationRegex)) {
+            displayText = displayText.replace(translationRegex, (match, transText) => {
+                translationHtml = this.buildTranslationHtml(translationPosOption, transText);
+                return ''; // 在正文中移除翻译，放入独立的 DOM
+            });
+        }
 
         const quoteRegex = /\n?\[\[QUOTE:([^|]+)\|([^\]]+)\]\]/g;
         if (displayText.match(quoteRegex)) {
@@ -277,7 +305,7 @@ window.ChatRender = {
         if (type === 'system' && msgObj && (msgObj.isUserRecall || msgObj.isAiRecall)) {
             bubblesGroupHtml = `
                 <div class="${bubbleClass}" style="${colorStyleStr}">
-                    <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}${quoteStyleOption === 'inside' ? quoteHtml : ''}</div>
+                    <div class="chat-bubble-text" style="position: relative; z-index: 10;">${displayText}${quoteStyleOption === 'inside' ? quoteHtml : ''}${translationPosOption === 'inside' ? translationHtml : ''}</div>
                 </div>
             `;
         } else {
@@ -318,7 +346,8 @@ window.ChatRender = {
                                     }
                                 }, 0);
                             }
-                            return `<img id="${uniqueId}" src="${src}" style="width: 100px; height: 100px; object-fit: contain; vertical-align: middle; background: transparent;" alt="${found.name || emojiName || '表情'}">`;
+                            const emojiMeaning = encodeURIComponent(found.name || emojiName || '暂无说明');
+                            return `<img id="${uniqueId}" src="${src}" style="width: 100px; height: 100px; object-fit: contain; vertical-align: middle; background: transparent; cursor: pointer;" alt="${found.name || emojiName || '表情'}" onclick="if(window._currentChatOSAlert) window._currentChatOSAlert('表情含义', decodeURIComponent('${emojiMeaning}'))">`;
                         }
                         return '';
                     });
@@ -355,13 +384,15 @@ window.ChatRender = {
                 }
 
                 let appendInsideQuote = '';
-                if (idx === parts.length - 1 && quoteStyleOption === 'inside' && quoteHtml) {
-                    appendInsideQuote = quoteHtml;
+                let appendInsideTranslation = '';
+                if (idx === parts.length - 1) {
+                    if (quoteStyleOption === 'inside' && quoteHtml) appendInsideQuote = quoteHtml;
+                    if (translationPosOption === 'inside' && translationHtml) appendInsideTranslation = translationHtml;
                 }
 
                 bubblesHtmlArray.push(`
-                    <div class="${partBubbleClass}" style="width: fit-content; max-width: 100%; ${partColorStyle}">
-                        <div class="chat-bubble-text" style="position: relative; z-index: 10;">${partHtml}${appendInsideQuote}</div>
+                    <div class="${partBubbleClass}" style="width: fit-content; max-width: 100%; cursor: pointer; ${partColorStyle}">
+                        <div class="chat-bubble-text" style="position: relative; z-index: 10;">${partHtml}${appendInsideQuote}${appendInsideTranslation}</div>
                     </div>
                 `);
             });
@@ -378,6 +409,7 @@ window.ChatRender = {
             bubbleContentHtml = `
                 <div class="chat-bubble-group" style="display: flex; flex-direction: column; gap: 4px; max-width: 100%;">
                     ${bubblesGroupHtml}
+                    ${translationPosOption === 'outside' ? translationHtml : ''}
                     ${quoteStyleOption === 'outside' ? quoteHtml : ''}
                     <div class="greeting-nav-container" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <button class="greeting-arrow left-arrow" data-idx="${indexInHistory}"><i class="ph ph-caret-left"></i></button>
@@ -387,12 +419,16 @@ window.ChatRender = {
                 </div>
             `;
         } else {
-            if (quoteStyleOption === 'outside' && quoteHtml) {
-                let align = type === 'me' ? 'flex-end' : 'flex-start';
+            let align = type === 'me' ? 'flex-end' : 'flex-start';
+            let extraHtml = '';
+            if (translationPosOption === 'outside' && translationHtml) extraHtml += translationHtml;
+            if (quoteStyleOption === 'outside' && quoteHtml) extraHtml += quoteHtml;
+            
+            if (extraHtml) {
                 bubbleContentHtml = `
                     <div style="display: flex; flex-direction: column; gap: 2px; max-width: 100%; align-items: ${align};">
                         ${bubblesGroupHtml}
-                        ${quoteHtml}
+                        ${extraHtml}
                     </div>
                 `;
             } else {

@@ -20,6 +20,9 @@
     
     <!-- 引入 mammoth.js 用于前端读取 docx 文本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- 引入 JSZip 用于前端解压 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <!-- 引入样式 -->
     <link rel="stylesheet" href="src/styles/reset.css?v=2">
@@ -159,6 +162,42 @@
         <!-- 隐藏的文件选择器 -->
         <input type="file" id="global-file-input" accept="image/*" style="display: none;">
 
+        <!-- 压缩包文件选择弹窗 -->
+        <div id="zip-selection-modal" class="custom-modal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content-wrapper" style="max-height: 80vh; display: flex; flex-direction: column;">
+                <button class="modal-close-btn" id="zip-modal-cancel-icon" aria-label="关闭">
+                    <i class="ph ph-x"></i>
+                </button>
+                
+                <h3 class="modal-title">选择要导入的文件</h3>
+                <p class="modal-message">已解析压缩包内容，请勾选需要导入的文件：</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 20px 10px 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                        <input type="checkbox" id="zip-modal-select-all" checked>
+                        <span>全选</span>
+                    </label>
+                    <span id="zip-modal-count" style="font-size: 12px; color: var(--text-color-secondary);">0 项</span>
+                </div>
+
+                <div class="modal-inputs" style="flex: 1; overflow-y: auto; padding: 0 20px; margin-bottom: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+                    <div id="zip-file-list" style="display: flex; flex-direction: column; gap: 10px; padding: 10px 0;">
+                        <!-- 文件列表由 JS 动态生成 -->
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 0;">
+                    <button class="modal-btn modal-btn-primary modal-btn-icon-center" id="zip-modal-confirm">
+                        <span class="btn-text">确认导入</span>
+                    </button>
+                    <button class="modal-btn modal-btn-secondary modal-btn-icon-center" id="zip-modal-cancel">
+                        <span class="btn-text">取消</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     <!-- 结束 app-container -->
     </div>
 
@@ -168,9 +207,19 @@
     <script src="src/apps/chat/template.js"></script>
     <script src="src/apps/chat/api.js"></script>
     <script src="src/apps/chat/render.js"></script>
+    <script src="src/apps/chat/context.js"></script>
+    <script src="src/apps/chat/session.js"></script>
+    <script src="src/apps/chat/conversation.js"></script>
+    <script src="src/apps/chat/persona.js"></script>
+    <script src="src/apps/chat/character.js"></script>
+    <script src="src/apps/chat/emoji.js"></script>
+    <script src="src/apps/chat/memory.js"></script>
+    <script src="src/apps/chat/dynamic.js"></script>
+    <script src="src/apps/chat/app.js"></script>
 
     <!-- 引入系统核心依赖 -->
     <script src="src/scripts/window-manager.js"></script>
+    <script src="src/scripts/zip-manager.js"></script>
     <!-- 去掉 type="module"，解决直接双击打开时不执行 JS 的问题 -->
     <script src="src/scripts/main.js"></script>
 </body>

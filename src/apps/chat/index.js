@@ -12,6 +12,311 @@ window.SystemApps['chat'] = {
         let aiReplyPaused = false;
         let currentQuote = null; // 当前正在引用的消息
 
+        // 会话分组相关逻辑
+        let currentListGroupId = 'all'; // all 表示显示全部
+        let isSessionGroupManageMultiMode = false;
+        let selectedSessionGroupIds = new Set();
+        
+        const chatListGroupTabs = container.querySelector('#chat-list-group-tabs');
+        const popupSessionGroup = container.querySelector('#chat-session-group-popup');
+        const popupSessionGroupManage = container.querySelector('#chat-session-group-manage-popup');
+        const sessionGroupSelect = container.querySelector('#session-group-select');
+        const sessionGroupNewName = container.querySelector('#session-group-new-name');
+        const btnCreateSessionGroup = container.querySelector('#btn-create-session-group');
+        const btnConfirmSessionGroup = container.querySelector('#btn-confirm-session-group');
+        const btnManageSessionGroups = container.querySelector('#btn-manage-session-groups');
+        const sessionGroupManageList = container.querySelector('#session-group-manage-list');
+        
+        const btnManageSessionGroupsMulti = container.querySelector('#btn-manage-session-groups-multi');
+        const sessionGroupManageFooter = container.querySelector('#session-group-manage-footer');
+        const btnSelectAllSessionGroups = container.querySelector('#btn-select-all-session-groups');
+        const btnDeleteSelectedSessionGroups = container.querySelector('#btn-delete-selected-session-groups');
+
+        const loadCharListGroups = window.ChatStorage.loadCharListGroups;
+        const saveCharListGroups = window.ChatStorage.saveCharListGroups;
+
+        const renderChatListGroups = () => {
+            if (!chatListGroupTabs) return;
+            chatListGroupTabs.innerHTML = '';
+            
+            const groups = loadCharListGroups();
+            const allGroups = [{ id: 'all', name: '全部' }, ...groups];
+            
+            allGroups.forEach(g => {
+                const btn = document.createElement('button');
+                btn.className = 'chat-btn-text';
+                btn.style.cssText = `padding: 4px 12px; font-size: 13px; border-radius: 16px; border: 1px solid ${currentListGroupId === g.id ? 'var(--accent-color, #18181b)' : 'transparent'}; background: ${currentListGroupId === g.id ? 'rgba(0,0,0,0.05)' : 'transparent'}; color: ${currentListGroupId === g.id ? 'var(--accent-color, #18181b)' : 'var(--text-secondary)'}; flex-shrink: 0; transition: all 0.2s; white-space: nowrap; font-weight: ${currentListGroupId === g.id ? '600' : 'normal'};`;
+                btn.textContent = g.name;
+                btn.onclick = () => {
+                    currentListGroupId = g.id;
+                    renderChatListGroups();
+                    renderChatList();
+                };
+                chatListGroupTabs.appendChild(btn);
+            });
+        };
+
+        const renderSessionGroupOptions = () => {
+            if (!sessionGroupSelect) return;
+            sessionGroupSelect.innerHTML = '<option value="">无分组</option>';
+            const groups = loadCharListGroups();
+            groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = g.name;
+                sessionGroupSelect.appendChild(opt);
+            });
+        };
+
+        if (btnCreateSessionGroup) {
+            btnCreateSessionGroup.addEventListener('click', () => {
+                const name = sessionGroupNewName.value.trim();
+                if (!name) {
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '请输入分组名称');
+                    return;
+                }
+                const groups = loadCharListGroups();
+                const newId = 'list_group_' + Date.now();
+                groups.push({ id: newId, name: name });
+                saveCharListGroups(groups);
+                
+                sessionGroupNewName.value = '';
+                renderChatListGroups();
+                renderSessionGroupOptions();
+                if (sessionGroupSelect) sessionGroupSelect.value = newId;
+                if (window._currentChatOSAlert) window._currentChatOSAlert('成功', '分组创建成功');
+            });
+        }
+
+        const updateSessionGroupManageFooter = () => {
+            const groups = loadCharListGroups();
+            if (isSessionGroupManageMultiMode) {
+                if (sessionGroupManageFooter) sessionGroupManageFooter.style.display = 'flex';
+                if (btnManageSessionGroupsMulti) btnManageSessionGroupsMulti.textContent = '取消';
+                if (btnDeleteSelectedSessionGroups) {
+                    btnDeleteSelectedSessionGroups.textContent = `删除 (${selectedSessionGroupIds.size})`;
+                    btnDeleteSelectedSessionGroups.disabled = selectedSessionGroupIds.size === 0;
+                }
+                if (groups.length > 0 && selectedSessionGroupIds.size === groups.length) {
+                    if (btnSelectAllSessionGroups) btnSelectAllSessionGroups.textContent = '取消全选';
+                } else {
+                    if (btnSelectAllSessionGroups) btnSelectAllSessionGroups.textContent = '全选';
+                }
+            } else {
+                if (sessionGroupManageFooter) sessionGroupManageFooter.style.display = 'none';
+                if (btnManageSessionGroupsMulti) btnManageSessionGroupsMulti.textContent = '多选';
+            }
+        };
+
+        if (btnManageSessionGroupsMulti) {
+            btnManageSessionGroupsMulti.addEventListener('click', () => {
+                isSessionGroupManageMultiMode = !isSessionGroupManageMultiMode;
+                selectedSessionGroupIds.clear();
+                updateSessionGroupManageFooter();
+                renderSessionGroupManageList();
+            });
+        }
+
+        if (btnSelectAllSessionGroups) {
+            btnSelectAllSessionGroups.addEventListener('click', () => {
+                const groups = loadCharListGroups();
+                if (selectedSessionGroupIds.size === groups.length) {
+                    selectedSessionGroupIds.clear();
+                } else {
+                    groups.forEach(g => selectedSessionGroupIds.add(g.id));
+                }
+                updateSessionGroupManageFooter();
+                renderSessionGroupManageList();
+            });
+        }
+
+        if (btnDeleteSelectedSessionGroups) {
+            btnDeleteSelectedSessionGroups.addEventListener('click', () => {
+                if (selectedSessionGroupIds.size === 0) return;
+                showChatConfirm('批量删除分组', `确定要删除选中的 ${selectedSessionGroupIds.size} 个分组吗？角色不会被删除。`, () => {
+                    const groups = loadCharListGroups();
+                    const newGroups = groups.filter(group => !selectedSessionGroupIds.has(group.id));
+                    saveCharListGroups(newGroups);
+                    
+                    // 清理该分组下的角色的groupId
+                    let chars = loadCharacters();
+                    let changed = false;
+                    chars.forEach(c => {
+                        if (c.listGroupId && selectedSessionGroupIds.has(c.listGroupId)) {
+                            delete c.listGroupId;
+                            changed = true;
+                        }
+                    });
+                    if (changed) saveCharacters(chars);
+
+                    if (selectedSessionGroupIds.has(currentListGroupId)) {
+                        currentListGroupId = 'all';
+                    }
+                    
+                    selectedSessionGroupIds.clear();
+                    isSessionGroupManageMultiMode = false;
+                    
+                    updateSessionGroupManageFooter();
+                    renderChatListGroups();
+                    renderSessionGroupManageList();
+                    renderChatList();
+                    
+                    if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '已删除所选分组');
+                });
+            });
+        }
+
+        const renderSessionGroupManageList = () => {
+            if (!sessionGroupManageList) return;
+            sessionGroupManageList.innerHTML = '';
+            const groups = loadCharListGroups();
+            if (groups.length === 0) {
+                sessionGroupManageList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px; padding: 20px 0;">暂无分组</div>';
+                return;
+            }
+            groups.forEach(g => {
+                const item = document.createElement('div');
+                let isChecked = isSessionGroupManageMultiMode && selectedSessionGroupIds.has(g.id);
+                item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 8px; border: 1px solid ${isChecked ? 'var(--accent-color, #18181b)' : 'var(--border-color)'}; cursor: ${isSessionGroupManageMultiMode ? 'pointer' : 'default'}; transition: border-color 0.2s;`;
+                
+                if (isSessionGroupManageMultiMode) {
+                    const checkIcon = document.createElement('div');
+                    checkIcon.style.cssText = `width: 18px; height: 18px; border-radius: 4px; background: ${isChecked ? 'var(--accent-color, #18181b)' : 'transparent'}; border: 1px solid ${isChecked ? 'transparent' : '#d1d1d6'}; color: white; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;`;
+                    if (isChecked) {
+                        checkIcon.innerHTML = '<i class="ph-bold ph-check" style="font-size: 12px;"></i>';
+                    }
+                    item.appendChild(checkIcon);
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.style.cssText = 'flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+                    nameSpan.textContent = g.name;
+                    item.appendChild(nameSpan);
+                    
+                    item.addEventListener('click', () => {
+                        if (selectedSessionGroupIds.has(g.id)) {
+                            selectedSessionGroupIds.delete(g.id);
+                        } else {
+                            selectedSessionGroupIds.add(g.id);
+                        }
+                        updateSessionGroupManageFooter();
+                        renderSessionGroupManageList();
+                    });
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = g.name;
+                    input.style.cssText = 'flex: 1; border: none; background: transparent; outline: none; font-size: 14px; margin-right: 8px;';
+                    
+                    input.addEventListener('change', (e) => {
+                        const newName = e.target.value.trim();
+                        if (newName) {
+                            g.name = newName;
+                            saveCharListGroups(groups);
+                            renderChatListGroups();
+                        }
+                    });
+
+                    const delBtn = document.createElement('button');
+                    delBtn.style.cssText = 'background: none; border: none; color: #FF3B30; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;';
+                    delBtn.innerHTML = '<i class="ph ph-trash"></i>';
+                    
+                    delBtn.addEventListener('click', () => {
+                        showChatConfirm('删除分组', `确定要删除分组"${g.name}"吗？角色不会被删除。`, () => {
+                            const newGroups = groups.filter(group => group.id !== g.id);
+                            saveCharListGroups(newGroups);
+                            
+                            // 清理该分组下的角色的groupId
+                            let chars = loadCharacters();
+                            let changed = false;
+                            chars.forEach(c => {
+                                if (c.listGroupId === g.id) {
+                                    delete c.listGroupId;
+                                    changed = true;
+                                }
+                            });
+                            if (changed) saveCharacters(chars);
+
+                            if (currentListGroupId === g.id) {
+                                currentListGroupId = 'all';
+                            }
+                            renderChatListGroups();
+                            renderSessionGroupManageList();
+                            renderChatList();
+                        });
+                    });
+                    
+                    item.appendChild(input);
+                    item.appendChild(delBtn);
+                }
+                
+                sessionGroupManageList.appendChild(item);
+            });
+        };
+
+        if (btnManageSessionGroups) {
+            btnManageSessionGroups.addEventListener('click', () => {
+                isSessionGroupManageMultiMode = false;
+                selectedSessionGroupIds.clear();
+                updateSessionGroupManageFooter();
+                renderSessionGroupManageList();
+                popupSessionGroupManage.classList.add('active');
+            });
+        }
+
+        // 绑定移动分组弹窗的确认按钮
+        if (btnConfirmSessionGroup) {
+            btnConfirmSessionGroup.addEventListener('click', () => {
+                const targetGroupId = sessionGroupSelect ? sessionGroupSelect.value : '';
+                let chars = loadCharacters();
+                let charsChanged = false;
+                
+                const processIdAttr = (idAttr) => {
+                    if (String(idAttr).startsWith('char_')) {
+                        const index = chars.findIndex(c => c.id === idAttr);
+                        if (index !== -1) {
+                            if (targetGroupId) {
+                                chars[index].listGroupId = targetGroupId;
+                            } else {
+                                delete chars[index].listGroupId;
+                            }
+                            charsChanged = true;
+                        }
+                    } else {
+                        const id = parseInt(idAttr);
+                        const item = initialMessages.find(m => m.id === id);
+                        if (item) {
+                            if (targetGroupId) {
+                                item.listGroupId = targetGroupId;
+                            } else {
+                                delete item.listGroupId;
+                            }
+                        }
+                    }
+                };
+
+                if (isSessionSelectMode && selectedSessionIds.size > 0) {
+                    selectedSessionIds.forEach(idAttr => {
+                        processIdAttr(idAttr);
+                    });
+                    exitSessionSelectMode();
+                } else if (activeSessionForMenu) {
+                    processIdAttr(activeSessionForMenu.id);
+                    closeSessionMenu();
+                }
+
+                if (charsChanged) {
+                    saveCharacters(chars);
+                }
+
+                popupSessionGroup.classList.remove('active');
+                renderChatList();
+                if (window._currentChatOSAlert) window._currentChatOSAlert('提示', '分组设置成功');
+            });
+        }
+
+        // 初始化渲染标签
+        renderChatListGroups();
+
         // --- 消息操作菜单逻辑 ---
         let activeMessageForMenu = null;
         const msgMenuOverlay = container.querySelector('#chat-message-menu-overlay');
@@ -43,15 +348,21 @@ window.SystemApps['chat'] = {
         const btnSessionSelectDelete = container.querySelector('#btn-session-select-delete');
         const btnSessionSelectPin = container.querySelector('#btn-session-select-pin');
         const btnSessionSelectUnpin = container.querySelector('#btn-session-select-unpin');
+        const btnSessionSelectRead = container.querySelector('#btn-session-select-read');
+        const btnSessionSelectUnread = container.querySelector('#btn-session-select-unread');
         const btnSessionSelectAll = container.querySelector('#btn-session-select-all');
+        const btnSessionSelectGroup = container.querySelector('#btn-session-select-group');
         const chatListContainer = container.querySelector('#chat-list-container');
         
         // 会话长按菜单
         const sessionMenuOverlay = container.querySelector('#chat-session-menu-overlay');
         const btnSessionMenuPin = container.querySelector('#btn-session-pin');
         const btnSessionMenuUnpin = container.querySelector('#btn-session-unpin');
+        const btnSessionMenuRead = container.querySelector('#btn-session-read');
+        const btnSessionMenuUnread = container.querySelector('#btn-session-unread');
         const btnSessionMenuDelete = container.querySelector('#btn-session-delete');
         const btnSessionMenuSelect = container.querySelector('#btn-session-select');
+        const btnSessionMenuGroup = container.querySelector('#btn-session-group');
         let activeSessionForMenu = null;
 
         const updateSessionSelectBarUI = () => {
@@ -62,23 +373,34 @@ window.SystemApps['chat'] = {
                 btnSessionSelectDelete.textContent = `删除(${selectedSessionIds.size})`;
                 btnSessionSelectDelete.disabled = selectedSessionIds.size === 0;
             }
+            if (btnSessionSelectGroup) {
+                btnSessionSelectGroup.textContent = `分组(${selectedSessionIds.size})`;
+                btnSessionSelectGroup.disabled = selectedSessionIds.size === 0;
+            }
             
             // 检查选中的会话中是否全是置顶/未置顶
             let allPinned = true;
             let anyPinned = false;
+            let allRead = true;
+            let allUnread = true;
             
             selectedSessionIds.forEach(id => {
                 let isPinned = false;
+                let isUnread = false;
                 if (!String(id).startsWith('char_')) {
                     const item = initialMessages.find(m => m.id === parseInt(id));
                     if (item && item.isPinned) isPinned = true;
+                    if (item && item.isUnread) isUnread = true;
                 } else {
                     const chars = loadCharacters();
                     const item = chars.find(c => c.id === id);
                     if (item && item.isPinned) isPinned = true;
+                    if (item && item.isUnread) isUnread = true;
                 }
                 if (isPinned) anyPinned = true;
                 if (!isPinned) allPinned = false;
+                if (isUnread) allRead = false;
+                if (!isUnread) allUnread = false;
             });
             
             if (btnSessionSelectPin && btnSessionSelectUnpin) {
@@ -97,6 +419,25 @@ window.SystemApps['chat'] = {
                     btnSessionSelectUnpin.style.display = 'none';
                     btnSessionSelectPin.textContent = `置顶(${selectedSessionIds.size})`;
                     btnSessionSelectPin.disabled = false;
+                }
+            }
+
+            if (btnSessionSelectRead && btnSessionSelectUnread) {
+                if (selectedSessionIds.size === 0) {
+                    btnSessionSelectRead.style.display = 'none';
+                    btnSessionSelectUnread.style.display = 'block';
+                    btnSessionSelectUnread.textContent = '标为未读(0)';
+                    btnSessionSelectUnread.disabled = true;
+                } else if (allUnread) {
+                    btnSessionSelectUnread.style.display = 'none';
+                    btnSessionSelectRead.style.display = 'block';
+                    btnSessionSelectRead.textContent = `标为已读(${selectedSessionIds.size})`;
+                    btnSessionSelectRead.disabled = false;
+                } else {
+                    btnSessionSelectRead.style.display = 'none';
+                    btnSessionSelectUnread.style.display = 'block';
+                    btnSessionSelectUnread.textContent = `标为未读(${selectedSessionIds.size})`;
+                    btnSessionSelectUnread.disabled = false;
                 }
             }
 
@@ -201,6 +542,57 @@ window.SystemApps['chat'] = {
             });
         }
 
+        const setSessionReadStatus = (idAttr, isUnread) => {
+            if (String(idAttr).startsWith('char_')) {
+                let chars = loadCharacters();
+                const index = chars.findIndex(c => c.id === idAttr);
+                if (index !== -1) {
+                    chars[index].isUnread = isUnread;
+                    chars[index].unreadCount = isUnread ? 1 : 0;
+                    saveCharacters(chars);
+                }
+            } else {
+                const id = parseInt(idAttr);
+                const item = initialMessages.find(m => m.id === id);
+                if (item) {
+                    item.isUnread = isUnread;
+                    item.unreadCount = isUnread ? 1 : 0;
+                }
+            }
+            updateTotalUnreadBadge();
+        };
+
+        if (btnSessionSelectRead) {
+            btnSessionSelectRead.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                selectedSessionIds.forEach(idAttr => {
+                    setSessionReadStatus(idAttr, false);
+                });
+                exitSessionSelectMode();
+                renderChatList();
+            });
+        }
+
+        if (btnSessionSelectUnread) {
+            btnSessionSelectUnread.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                selectedSessionIds.forEach(idAttr => {
+                    setSessionReadStatus(idAttr, true);
+                });
+                exitSessionSelectMode();
+                renderChatList();
+            });
+        }
+
+        if (btnSessionSelectGroup) {
+            btnSessionSelectGroup.addEventListener('click', () => {
+                if (selectedSessionIds.size === 0) return;
+                renderSessionGroupOptions();
+                if (sessionGroupSelect) sessionGroupSelect.value = '';
+                popupSessionGroup.classList.add('active');
+            });
+        }
+
         if (btnSessionSelectDelete) {
             btnSessionSelectDelete.addEventListener('click', () => {
                 if (selectedSessionIds.size === 0) return;
@@ -246,6 +638,30 @@ window.SystemApps['chat'] = {
             });
             sessionMenuOverlay.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
+                closeSessionMenu();
+            });
+        }
+
+        if (btnSessionMenuGroup) {
+            btnSessionMenuGroup.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                renderSessionGroupOptions();
+                
+                // 预选当前会话的分组
+                const idAttr = activeSessionForMenu.id;
+                let currentGroupId = '';
+                if (String(idAttr).startsWith('char_')) {
+                    const chars = loadCharacters();
+                    const c = chars.find(c => c.id === idAttr);
+                    if (c && c.listGroupId) currentGroupId = c.listGroupId;
+                } else {
+                    const id = parseInt(idAttr);
+                    const item = initialMessages.find(m => m.id === id);
+                    if (item && item.listGroupId) currentGroupId = item.listGroupId;
+                }
+                if (sessionGroupSelect) sessionGroupSelect.value = currentGroupId;
+
+                popupSessionGroup.classList.add('active');
                 closeSessionMenu();
             });
         }
@@ -307,6 +723,24 @@ window.SystemApps['chat'] = {
             });
         }
 
+        if (btnSessionMenuRead) {
+            btnSessionMenuRead.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                setSessionReadStatus(activeSessionForMenu.id, false);
+                renderChatList();
+                closeSessionMenu();
+            });
+        }
+
+        if (btnSessionMenuUnread) {
+            btnSessionMenuUnread.addEventListener('click', () => {
+                if (!activeSessionForMenu) return;
+                setSessionReadStatus(activeSessionForMenu.id, true);
+                renderChatList();
+                closeSessionMenu();
+            });
+        }
+
         const showSessionMenu = (e, msgObj, idAttr) => {
             e.preventDefault();
             if (isSessionSelectMode) return;
@@ -325,6 +759,21 @@ window.SystemApps['chat'] = {
             } else {
                 btnSessionMenuPin.style.display = 'flex';
                 btnSessionMenuUnpin.style.display = 'none';
+            }
+
+            let isUnread = false;
+            if (msgObj && msgObj.rawCharData && msgObj.rawCharData.isUnread) {
+                isUnread = true;
+            } else if (msgObj && msgObj.isUnread) {
+                isUnread = true;
+            }
+
+            if (isUnread) {
+                btnSessionMenuRead.style.display = 'flex';
+                btnSessionMenuUnread.style.display = 'none';
+            } else {
+                btnSessionMenuRead.style.display = 'none';
+                btnSessionMenuUnread.style.display = 'flex';
             }
 
             sessionMenuOverlay.style.display = 'flex';
@@ -453,6 +902,14 @@ window.SystemApps['chat'] = {
                             }
                             updateSelectBarUI();
                         }
+                    }
+                } else {
+                    if (convExtPanel && convExtPanel.style.display !== 'none') {
+                        convExtPanel.style.display = 'none';
+                        if (convPlusBtn) convPlusBtn.style.transform = 'rotate(0deg)';
+                    }
+                    if (convEmojiPanel && convEmojiPanel.style.display !== 'none') {
+                        convEmojiPanel.style.display = 'none';
                     }
                 }
             });
@@ -1070,8 +1527,22 @@ window.SystemApps['chat'] = {
             btn.addEventListener('click', closePopups);
         });
 
-        // 独立关闭表情包子弹窗（保留底层的管理弹窗）
-        container.querySelectorAll('.btn-close-emoji-sub, .btn-close-char-emoji-sub').forEach(btn => {
+        // 点击遮罩层空白处关闭弹窗
+        container.querySelectorAll('.chat-popup-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    const closeBtn = overlay.querySelector('.btn-close-popup, .btn-close-emoji-sub, .btn-close-char-emoji-sub, .btn-close-help, .btn-prompt-cancel, .btn-confirm-cancel, .btn-close-alert, .btn-close-transfer, .btn-location-cancel, .btn-close-shape-popup, .btn-close-timezone, .btn-close-session-group-sub, .btn-close-session-group-manage');
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else {
+                        overlay.classList.remove('active');
+                    }
+                }
+            });
+        });
+
+        // 独立关闭表情包子弹窗、会话分组相关子弹窗（保留底层的管理弹窗）
+        container.querySelectorAll('.btn-close-emoji-sub, .btn-close-char-emoji-sub, .btn-close-session-group-sub, .btn-close-session-group-manage').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const subPopup = e.target.closest('.chat-popup-overlay');
                 if (subPopup) {
@@ -2249,10 +2720,16 @@ window.SystemApps['chat'] = {
                     total += m.unreadCount;
                 }
             });
+            const chars = loadCharacters();
+            chars.forEach(c => {
+                if (c.isUnread && c.unreadCount > 0) {
+                    total += c.unreadCount;
+                }
+            });
             const badge = container.querySelector('.chat-nav-pill[data-target="chat-view-messages"] .chat-nav-badge');
             if (badge) {
                 if (total > 0) {
-                    badge.textContent = total;
+                    badge.textContent = total > 99 ? '99+' : total;
                     badge.style.display = '';
                 } else {
                     badge.style.display = 'none';
@@ -2362,8 +2839,8 @@ window.SystemApps['chat'] = {
                     initials: charName.charAt(0),
                     message: lastMessageContent,
                     time: char.time || localTime,
-                    isUnread: false,
-                    unreadCount: 0,
+                    isUnread: char.isUnread || false,
+                    unreadCount: char.unreadCount || 0,
                     isOnline: true,
                     color: '#f0f0f0',
                     textColor: '#333',
@@ -2383,6 +2860,13 @@ window.SystemApps['chat'] = {
                         (msg.message && msg.message.toLowerCase().includes(keyword))
                     );
                 }
+            }
+            
+            // 按照当前选择的分组过滤
+            if (currentListGroupId !== 'all') {
+                displayList = displayList.filter(msg => {
+                    return msg.rawCharData && msg.rawCharData.listGroupId === currentListGroupId;
+                });
             }
             
             // 排序逻辑：置顶的排在前面，且按 pinTime 降序；未置顶的保持原顺序（或按其他逻辑）
@@ -2465,6 +2949,16 @@ window.SystemApps['chat'] = {
                     if (msg.isUnread) {
                         msg.isUnread = false;
                         msg.unreadCount = 0;
+                        
+                        if (msg.isCharacter) {
+                            let chars = loadCharacters();
+                            let charIdx = chars.findIndex(c => c.id === msg.id);
+                            if (charIdx !== -1) {
+                                chars[charIdx].isUnread = false;
+                                chars[charIdx].unreadCount = 0;
+                                saveCharacters(chars);
+                            }
+                        }
                         
                         const timeEl = item.querySelector('.chat-item-time');
                         const msgEl = item.querySelector('.chat-item-msg');
@@ -5399,17 +5893,15 @@ window.SystemApps['chat'] = {
                         bgUrl = charConfig.chatBgUrl || '';
                     }
 
-                    if (bgUrl) {
-                        bgPreview.src = bgUrl;
-                        bgPreview.style.opacity = '1';
-                        bgUploadBtn.style.borderColor = 'transparent';
-                        btnClearBg.style.display = 'block';
-                    } else {
-                        bgPreview.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-                        bgPreview.style.opacity = '0';
-                        bgUploadBtn.style.borderColor = 'var(--border-color)';
-                        btnClearBg.style.display = 'none';
-                    }
+                if (bgUrl) {
+                    bgPreview.src = bgUrl;
+                    bgPreview.style.opacity = '1';
+                    bgUploadBtn.style.borderColor = 'transparent';
+                } else {
+                    bgPreview.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    bgPreview.style.opacity = '0';
+                    bgUploadBtn.style.borderColor = 'var(--border-color)';
+                }
                     bgUrlInput.value = charConfig.chatBgUrl || '';
                 };
 
@@ -5553,6 +6045,10 @@ window.SystemApps['chat'] = {
                         
                         renderBgPreview();
                         applyChatWallpaper(currentPersona.id);
+                        
+                        if (typeof showCustomModal === 'function') {
+                            showCustomModal('重置成功', '聊天壁纸已清除，将使用默认或全局壁纸。', false, '', () => {});
+                        }
                     };
                 }
 
@@ -5799,6 +6295,25 @@ window.SystemApps['chat'] = {
                     });
                 }
 
+                const closeAllDropdowns = () => {
+                    const panelIds = ['#cs-user-persona-options-panel', '#cs-worldbook-options-panel', '#cs-quote-style-options-panel', '#cs-avatar-display-options-panel', '#cs-bubble-style-options-panel', '#cs-msg-time-pos-options-panel', '#cs-msg-time-format-options-panel', '#cs-typing-style-options-panel'];
+                    const caretIds = ['#cs-user-persona-caret', '#cs-worldbook-caret', '#cs-quote-style-caret', '#cs-avatar-display-caret', '#cs-bubble-style-caret', '#cs-msg-time-pos-caret', '#cs-msg-time-format-caret', '#cs-typing-style-caret'];
+                    const triggerIds = ['#cs-user-persona-dropdown-trigger', '#cs-worldbook-dropdown-trigger', '#cs-quote-style-dropdown-trigger', '#cs-avatar-display-dropdown-trigger', '#cs-bubble-style-dropdown-trigger', '#cs-msg-time-pos-dropdown-trigger', '#cs-msg-time-format-dropdown-trigger', '#cs-typing-style-dropdown-trigger'];
+                    
+                    panelIds.forEach(id => {
+                        const el = container.querySelector(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    caretIds.forEach(id => {
+                        const el = container.querySelector(id);
+                        if (el) el.style.transform = 'rotate(0deg)';
+                    });
+                    triggerIds.forEach(id => {
+                        const el = container.querySelector(id);
+                        if (el) el.style.borderColor = 'var(--border-color)';
+                    });
+                };
+
                 const upInput = container.querySelector('#cs-user-persona-select');
                 const upTrigger = container.querySelector('#cs-user-persona-dropdown-trigger');
                 const upSelectedText = container.querySelector('#cs-user-persona-selected-text');
@@ -5854,11 +6369,8 @@ window.SystemApps['chat'] = {
                 upTrigger.onclick = (e) => {
                     e.stopPropagation();
                     const isPanelOpen = upOptionsPanel.style.display === 'block';
-                    if (isPanelOpen) {
-                        upOptionsPanel.style.display = 'none';
-                        upCaret.style.transform = 'rotate(0deg)';
-                        upTrigger.style.borderColor = 'var(--border-color)';
-                    } else {
+                    closeAllDropdowns();
+                    if (!isPanelOpen) {
                         upOptionsPanel.style.display = 'block';
                         upCaret.style.transform = 'rotate(180deg)';
                         upTrigger.style.borderColor = 'var(--accent-color)';
@@ -5956,11 +6468,8 @@ window.SystemApps['chat'] = {
                 wbTrigger.onclick = (e) => {
                     e.stopPropagation(); // 阻止冒泡，防止被下方全局document点击事件关掉
                     const isPanelOpen = wbOptionsPanel.style.display === 'block';
-                    if (isPanelOpen) {
-                        wbOptionsPanel.style.display = 'none';
-                        wbCaret.style.transform = 'rotate(0deg)';
-                        wbTrigger.style.borderColor = 'var(--border-color)';
-                    } else {
+                    closeAllDropdowns();
+                    if (!isPanelOpen) {
                         wbOptionsPanel.style.display = 'block';
                         wbCaret.style.transform = 'rotate(180deg)';
                         wbTrigger.style.borderColor = 'var(--accent-color)'; // 展开时边框高亮
@@ -6052,11 +6561,8 @@ window.SystemApps['chat'] = {
                         qsTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = qsOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                qsOptionsPanel.style.display = 'none';
-                                if (qsCaret) qsCaret.style.transform = 'rotate(0deg)';
-                                qsTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 qsOptionsPanel.style.display = 'block';
                                 if (qsCaret) qsCaret.style.transform = 'rotate(180deg)';
                                 qsTrigger.style.borderColor = 'var(--accent-color)';
@@ -6124,11 +6630,8 @@ window.SystemApps['chat'] = {
                         adTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = adOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                adOptionsPanel.style.display = 'none';
-                                if (adCaret) adCaret.style.transform = 'rotate(0deg)';
-                                adTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 adOptionsPanel.style.display = 'block';
                                 if (adCaret) adCaret.style.transform = 'rotate(180deg)';
                                 adTrigger.style.borderColor = 'var(--accent-color)';
@@ -6374,11 +6877,8 @@ window.SystemApps['chat'] = {
                         bsTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = bsOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                bsOptionsPanel.style.display = 'none';
-                                if (bsCaret) bsCaret.style.transform = 'rotate(0deg)';
-                                bsTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 bsOptionsPanel.style.display = 'block';
                                 if (bsCaret) bsCaret.style.transform = 'rotate(180deg)';
                                 bsTrigger.style.borderColor = 'var(--accent-color)';
@@ -6704,11 +7204,8 @@ window.SystemApps['chat'] = {
                         mtpTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = mtpOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                mtpOptionsPanel.style.display = 'none';
-                                if (mtpCaret) mtpCaret.style.transform = 'rotate(0deg)';
-                                mtpTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 mtpOptionsPanel.style.display = 'block';
                                 if (mtpCaret) mtpCaret.style.transform = 'rotate(180deg)';
                                 mtpTrigger.style.borderColor = 'var(--accent-color)';
@@ -6796,11 +7293,8 @@ window.SystemApps['chat'] = {
                         mtfTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = mtfOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                mtfOptionsPanel.style.display = 'none';
-                                if (mtfCaret) mtfCaret.style.transform = 'rotate(0deg)';
-                                mtfTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 mtfOptionsPanel.style.display = 'block';
                                 if (mtfCaret) mtfCaret.style.transform = 'rotate(180deg)';
                                 mtfTrigger.style.borderColor = 'var(--accent-color)';
@@ -6880,11 +7374,8 @@ window.SystemApps['chat'] = {
                         tsTrigger.onclick = (e) => {
                             e.stopPropagation();
                             const isPanelOpen = tsOptionsPanel.style.display === 'block';
-                            if (isPanelOpen) {
-                                tsOptionsPanel.style.display = 'none';
-                                if (tsCaret) tsCaret.style.transform = 'rotate(0deg)';
-                                tsTrigger.style.borderColor = 'var(--border-color)';
-                            } else {
+                            closeAllDropdowns();
+                            if (!isPanelOpen) {
                                 tsOptionsPanel.style.display = 'block';
                                 if (tsCaret) tsCaret.style.transform = 'rotate(180deg)';
                                 tsTrigger.style.borderColor = 'var(--accent-color)';
@@ -7187,7 +7678,8 @@ window.SystemApps['chat'] = {
             const charConfig = JSON.parse(localStorage.getItem(`nrj-chat-config-${currentPersona.id}`) || '{}');
             const typingStyle = charConfig.typingStyle || 'both';
 
-            if (typingStyle === 'bubble' || typingStyle === 'both') {
+            const isConvActiveInitial = convView && convView.classList.contains('active') && currentPersona && currentPersona.id === charId;
+            if (isConvActiveInitial && (typingStyle === 'bubble' || typingStyle === 'both')) {
                 addBubble('them', '<div class="typing-indicator"><span></span><span></span><span></span></div>', currentPersona, true);
             }
 
@@ -7490,15 +7982,25 @@ window.SystemApps['chat'] = {
                         currentHistory.push({ role: 'assistant', content: receiptText, timestamp: Date.now() });
 
                         const sysMsgText = hasReceivedTransfer ? '[{{char}} 已收取你的转账]' : '[{{char}} 已退回你的转账]';
-                        if (!charConfig.hideSystemMsg) {
-                            currentHistory.push({ role: 'system', content: sysMsgText, timestamp: Date.now() });
-                        } else {
-                            currentHistory.push({ role: 'system', content: sysMsgText, timestamp: Date.now() });
-                        }
+                        currentHistory.push({ role: 'system', content: sysMsgText, timestamp: Date.now() });
                         
                         saveChatHistory(charId, currentHistory);
                         // 重新打开会话渲染状态
-                        openConversation(currentPersona);
+                        const isConvActive = convView && convView.classList.contains('active') && currentPersona && currentPersona.id === charId;
+                        if (isConvActive) {
+                            openConversation(currentPersona);
+                        } else {
+                            let chars = loadCharacters();
+                            let charIdx = chars.findIndex(c => c.id === charId);
+                            if (charIdx !== -1) {
+                                chars[charIdx].isUnread = true;
+                                chars[charIdx].unreadCount = (chars[charIdx].unreadCount || 0) + 1;
+                                chars[charIdx].message = '[转账]';
+                                chars[charIdx].time = getLocalTimeByTimezone(finalTimezone);
+                                saveCharacters(chars);
+                            }
+                            renderChatList();
+                        }
                     }
                 }
 
@@ -7512,7 +8014,22 @@ window.SystemApps['chat'] = {
                     currentHistory.push({ role: 'system', content: sysText, timestamp: Date.now() });
                     
                     saveChatHistory(charId, currentHistory);
-                    openConversation(currentPersona);
+                    
+                    const isConvActive = convView && convView.classList.contains('active') && currentPersona && currentPersona.id === charId;
+                    if (isConvActive) {
+                        openConversation(currentPersona);
+                    } else {
+                        let chars = loadCharacters();
+                        let charIdx = chars.findIndex(c => c.id === charId);
+                        if (charIdx !== -1) {
+                            chars[charIdx].isUnread = true;
+                            chars[charIdx].unreadCount = (chars[charIdx].unreadCount || 0) + 1;
+                            chars[charIdx].message = '[转账]';
+                            chars[charIdx].time = getLocalTimeByTimezone(finalTimezone);
+                            saveCharacters(chars);
+                        }
+                        renderChatList();
+                    }
                 }
 
                 if (!replyText) {
@@ -7591,7 +8108,8 @@ window.SystemApps['chat'] = {
                     
                     if (i > 0) {
                         // 对于后续的消息，显示正在输入动画，并等待设定的延迟时间
-                        if (typingStyle === 'bubble' || typingStyle === 'both') {
+                        const isConvActiveTyping = convView && convView.classList.contains('active') && currentPersona && currentPersona.id === charId;
+                        if (isConvActiveTyping && (typingStyle === 'bubble' || typingStyle === 'both')) {
                             const existingTyping = document.getElementById('typing-bubble');
                             if (!existingTyping) {
                                 addBubble('them', '<div class="typing-indicator"><span></span><span></span><span></span></div>', currentPersona, true);
@@ -7608,12 +8126,35 @@ window.SystemApps['chat'] = {
                     let currentHistory = getChatHistory(charId);
                     
                     const newMsg = { role: 'assistant', content: r, timestamp: Date.now() };
-                    addBubble('them', r, currentPersona, false, newMsg, currentHistory.length);
+                    
+                    const isConvActive = convView && convView.classList.contains('active') && currentPersona && currentPersona.id === charId;
+                    
+                    // 只有在当前会话激活时才直接渲染气泡，避免不在当前页面时残留气泡
+                    if (isConvActive) {
+                        addBubble('them', r, currentPersona, false, newMsg, currentHistory.length);
+                    }
+                    
                     currentHistory.push(newMsg);
                     saveChatHistory(charId, currentHistory);
                     
                     currentPersona.message = r;
                     currentPersona.time = getLocalTimeByTimezone(finalTimezone);
+                    
+                    if (!isConvActive) {
+                        let chars = loadCharacters();
+                        let charIdx = chars.findIndex(c => c.id === charId);
+                        if (charIdx !== -1) {
+                            chars[charIdx].isUnread = true;
+                            chars[charIdx].unreadCount = (chars[charIdx].unreadCount || 0) + 1;
+                            chars[charIdx].message = r;
+                            chars[charIdx].time = getLocalTimeByTimezone(finalTimezone);
+                            saveCharacters(chars);
+                            
+                            currentPersona.isUnread = true;
+                            currentPersona.unreadCount = chars[charIdx].unreadCount;
+                        }
+                    }
+                    
                     renderChatList();
                 }
 

@@ -16,7 +16,7 @@ window.SystemApps['worldbook'] = {
                 </header>
 
                 <!-- 隐藏的文件选择器 -->
-                <input type="file" id="wb-import-file" accept=".txt,.docx,.json" style="display: none;">
+                <input type="file" id="wb-import-file" accept=".txt,.docx,.json,.zip" style="display: none;">
 
                 <!-- Main Content -->
                 <main class="settings-main">
@@ -32,9 +32,48 @@ window.SystemApps['worldbook'] = {
                                 
                                 <!-- 下拉菜单 -->
                                 <div id="wb-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: #ffffff; border: 1px solid rgba(228, 228, 231, 0.6); border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 150px; z-index: 101; overflow: hidden;">
+                                    <div id="wb-menu-create-group" style="padding: 14px 16px; cursor: pointer; color: #18181b; font-size: 14px; border-bottom: 1px solid rgba(244, 244, 245, 0.8); transition: background-color 0.2s;">新建分组</div>
+                                    <div id="wb-menu-manage-groups" style="padding: 14px 16px; cursor: pointer; color: #18181b; font-size: 14px; border-bottom: 1px solid rgba(244, 244, 245, 0.8); transition: background-color 0.2s;">分组管理</div>
                                     <div id="wb-menu-import" style="padding: 14px 16px; cursor: pointer; color: #18181b; font-size: 14px; border-bottom: 1px solid rgba(244, 244, 245, 0.8); transition: background-color 0.2s;">导入世界书</div>
                                     <div id="wb-menu-batch-export" style="padding: 14px 16px; cursor: pointer; color: #18181b; font-size: 14px; border-bottom: 1px solid rgba(244, 244, 245, 0.8); transition: background-color 0.2s;">批量导出</div>
+                                    <div id="wb-menu-batch-move" style="padding: 14px 16px; cursor: pointer; color: #18181b; font-size: 14px; border-bottom: 1px solid rgba(244, 244, 245, 0.8); transition: background-color 0.2s;">批量移动</div>
                                     <div id="wb-menu-batch-delete" style="padding: 14px 16px; cursor: pointer; color: #ef4444; font-size: 14px; transition: background-color 0.2s;">批量删除</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 居中弹窗式的分组管理面板 -->
+                        <div id="group-manage-panel" class="custom-modal">
+                            <div class="modal-backdrop modern-backdrop" id="group-manage-backdrop"></div>
+                            <div class="modern-modal-content" style="padding: 24px; text-align: left; background: #ffffff; border-radius: 24px; position: relative; z-index: 10; width: 85%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-height: 80vh; display: flex; flex-direction: column;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h3 style="margin: 0; font-size: 16px; color: #18181b; font-weight: 600;">分组管理</h3>
+                                    <button id="group-manage-close" class="minimal-btn" style="padding: 4px 8px; margin-right: -8px; font-size: 16px;">✕</button>
+                                </div>
+                                
+                                <div id="group-manage-list" style="display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;">
+                                    <!-- JS 渲染 -->
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(228, 228, 231, 0.6); padding-top: 16px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <button id="group-manage-select-all" class="minimal-btn" style="font-size: 13px;">全选</button>
+                                        <span id="group-manage-count" style="font-size: 12px; color: #a1a1aa;">已选 0 项</span>
+                                    </div>
+                                    <button id="group-manage-delete-btn" class="minimal-btn minimal-btn-danger" style="padding: 8px 16px; font-size: 13px; border-radius: 12px;" disabled>删除选中</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 居中弹窗式的分组新建/编辑面板 -->
+                        <div id="group-create-panel" class="custom-modal">
+                            <div class="modal-backdrop modern-backdrop" id="group-new-backdrop"></div>
+                            <div class="modern-modal-content" style="padding: 24px; text-align: left; background: #ffffff; border-radius: 24px; position: relative; z-index: 10; width: 85%; max-width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                                <h3 id="group-modal-title" style="margin: 0 0 16px 0; font-size: 16px; color: #18181b; font-weight: 600;">新建分组</h3>
+                                <input type="text" id="group-new-name" class="modern-input" placeholder="请输入分组名称..." style="background: #f4f4f5; border: none; padding: 16px; font-size: 15px; border-radius: 12px; outline: none; width: 100%; box-sizing: border-box;" />
+                                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                                    <button id="group-new-cancel" class="modern-btn-cancel" style="border: none; background: #f4f4f5; color: #18181b; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">取消</button>
+                                    <button id="group-new-save" class="modern-btn-confirm" style="background: #18181b; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">保存</button>
                                 </div>
                             </div>
                         </div>
@@ -44,7 +83,12 @@ window.SystemApps['worldbook'] = {
                             <div class="modal-backdrop modern-backdrop" id="wb-new-backdrop"></div>
                             <div class="modern-modal-content" style="padding: 24px; text-align: left; background: #ffffff; border-radius: 24px; position: relative; z-index: 10; width: 85%; max-width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
                                 <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #18181b; font-weight: 600;">新建世界书</h3>
-                                <input type="text" id="wb-new-name" class="modern-input" placeholder="请输入世界书名称..." style="background: #f4f4f5; border: none; padding: 16px; font-size: 15px; border-radius: 12px; outline: none; width: 100%; box-sizing: border-box;" />
+                                <input type="text" id="wb-new-name" class="modern-input" placeholder="请输入世界书名称..." style="background: #f4f4f5; border: none; padding: 16px; font-size: 15px; border-radius: 12px; outline: none; width: 100%; box-sizing: border-box; margin-bottom: 12px;" />
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 13px; color: #52525b; white-space: nowrap;">分组:</span>
+                                    <select id="wb-new-group-select" class="modern-input" style="background: #f4f4f5; border: none; padding: 10px 16px; font-size: 14px; border-radius: 12px; outline: none; width: 100%; box-sizing: border-box;">
+                                    </select>
+                                </div>
                                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
                                     <button id="wb-new-cancel" class="modern-btn-cancel" style="border: none; background: #f4f4f5; color: #18181b; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">取消</button>
                                     <button id="wb-new-save" class="modern-btn-confirm" style="background: #18181b; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">保存</button>
@@ -52,8 +96,25 @@ window.SystemApps['worldbook'] = {
                             </div>
                         </div>
 
+                        <!-- 居中弹窗式的批量移动面板 -->
+                        <div id="wb-move-panel" class="custom-modal">
+                            <div class="modal-backdrop modern-backdrop" id="wb-move-backdrop"></div>
+                            <div class="modern-modal-content" style="padding: 24px; text-align: left; background: #ffffff; border-radius: 24px; position: relative; z-index: 10; width: 85%; max-width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                                <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #18181b; font-weight: 600;">移动到分组</h3>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 13px; color: #52525b; white-space: nowrap;">选择目标:</span>
+                                    <select id="wb-move-group-select" class="modern-input" style="background: #f4f4f5; border: none; padding: 10px 16px; font-size: 14px; border-radius: 12px; outline: none; width: 100%; box-sizing: border-box;">
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                                    <button id="wb-move-cancel" class="modern-btn-cancel" style="border: none; background: #f4f4f5; color: #18181b; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">取消</button>
+                                    <button id="wb-move-save" class="modern-btn-confirm" style="background: #18181b; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer;">确定</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 世界书列表容器 (动态呈现白底卡片或透明空状态) -->
-                        <div id="wb-list-container" style="display: flex; flex-direction: column; border-radius: 24px; overflow: hidden;">
+                        <div id="wb-list-container" style="display: flex; flex-direction: column; overflow: hidden; gap: 16px;">
                             <!-- JS 动态渲染 -->
                         </div>
                         
@@ -134,6 +195,38 @@ window.SystemApps['worldbook'] = {
         </div>
 
         <style>
+            .wb-group {
+                background: #ffffff;
+                border-radius: 24px;
+                box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.03);
+                overflow: hidden;
+            }
+            .wb-group-header {
+                padding: 16px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: #fafafa;
+                border-bottom: 1px solid rgba(244, 244, 245, 0.8);
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            .wb-group-header:hover {
+                background-color: #f4f4f5;
+            }
+            .wb-group-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #27272a;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .wb-group-content {
+                display: flex;
+                flex-direction: column;
+            }
+
             /* 复用极简列表项样式 */
             .wb-card, .entry-card {
                 background-color: #ffffff;
@@ -228,7 +321,7 @@ window.SystemApps['worldbook'] = {
                 padding-top: 16px;
             }
             
-            .wb-checkbox {
+            .wb-checkbox, .group-checkbox {
                 width: 20px;
                 height: 20px;
                 cursor: pointer;
@@ -236,7 +329,7 @@ window.SystemApps['worldbook'] = {
                 margin-right: 16px;
                 display: none;
             }
-            .batch-mode .wb-checkbox {
+            .batch-mode .wb-checkbox, .batch-mode .group-checkbox {
                 display: block;
             }
             .batch-mode .wb-card-actions {
@@ -264,25 +357,44 @@ window.SystemApps['worldbook'] = {
 
         // --- 数据存储逻辑 ---
         const WB_STORAGE_KEY = 'nrj-worldbooks';
+        const WB_GROUPS_KEY = 'nrj-wb-groups';
         let worldbooks = [];
+        let wbGroups = [];
         try {
             worldbooks = JSON.parse(localStorage.getItem(WB_STORAGE_KEY)) || [];
+            wbGroups = JSON.parse(localStorage.getItem(WB_GROUPS_KEY)) || [];
         } catch(e) {
             console.error("加载世界书数据失败", e);
         }
 
+        if (wbGroups.length === 0) {
+            wbGroups.push({ id: 'default', name: '默认分组' });
+        }
+
+        // 确保旧数据有 groupId
+        let needSave = false;
+        worldbooks.forEach(wb => {
+            if (!wb.groupId) {
+                wb.groupId = 'default';
+                needSave = true;
+            }
+        });
+
         const saveWorldbooks = () => {
             localStorage.setItem(WB_STORAGE_KEY, JSON.stringify(worldbooks));
         };
+        const saveGroups = () => {
+            localStorage.setItem(WB_GROUPS_KEY, JSON.stringify(wbGroups));
+        };
 
-        // --- 工具：统一替换原生的 Alert 和 Confirm，并支持主题切换 ---
+        if(needSave) saveWorldbooks();
+        saveGroups();
+
+        // --- 工具：统一替换原生的 Alert 和 Confirm ---
         const applyModalTheme = (modal, type) => {
-            // 清除旧主题
             modal.classList.remove('theme-success', 'theme-danger', 'theme-info');
-            
             const iconEl = document.getElementById('modal-icon');
             if (iconEl) {
-                // 根据类型设置类名和图标
                 if (type === 'danger' || type === 'error') {
                     modal.classList.add('theme-danger');
                     iconEl.className = 'ph-fill ph-warning-circle';
@@ -290,7 +402,6 @@ window.SystemApps['worldbook'] = {
                     modal.classList.add('theme-info');
                     iconEl.className = 'ph-fill ph-info';
                 } else {
-                    // 默认 success
                     modal.classList.add('theme-success');
                     iconEl.className = 'ph-fill ph-check-circle';
                 }
@@ -300,9 +411,7 @@ window.SystemApps['worldbook'] = {
         const showAlert = (message, title = "提示", type = "success") => {
             const modal = document.getElementById('custom-modal');
             if(!modal) { window.alert(message); return; }
-            
             applyModalTheme(modal, type);
-
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-message').textContent = message;
             document.getElementById('modal-input').style.display = 'none';
@@ -315,8 +424,6 @@ window.SystemApps['worldbook'] = {
             btnCancel.style.display = 'none';
             btnReset.style.display = 'none';
             btnConfirm.style.display = 'block';
-            
-            // 如果是 danger，确认按钮也可以给个特殊的类名，但现在我们直接用默认黑底就好，发光颜色已经足够提醒
             btnConfirm.className = type === 'danger' ? 'modern-btn-danger' : 'modern-btn-confirm';
             btnConfirm.textContent = '确定';
             
@@ -335,9 +442,7 @@ window.SystemApps['worldbook'] = {
         const showConfirm = (message, title = "请确认", type = "info") => {
             const modal = document.getElementById('custom-modal');
             if(!modal) { return Promise.resolve(window.confirm(message)); }
-            
             applyModalTheme(modal, type);
-            
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-message').textContent = message;
             document.getElementById('modal-input').style.display = 'none';
@@ -373,7 +478,7 @@ window.SystemApps['worldbook'] = {
 
         // --- 批量操作状态 ---
         let isBatchMode = false;
-        let batchModeType = ''; // 'delete' 或 'export'
+        let batchModeType = ''; // 'delete', 'export', 'move'
         let selectedWbIds = new Set();
         
         const batchBar = container.querySelector('#wb-batch-bar');
@@ -385,8 +490,11 @@ window.SystemApps['worldbook'] = {
         // 菜单与下拉
         const menuBtn = container.querySelector('#wb-menu-btn');
         const dropdownMenu = container.querySelector('#wb-dropdown-menu');
+        const menuCreateGroup = container.querySelector('#wb-menu-create-group');
+        const menuManageGroups = container.querySelector('#wb-menu-manage-groups');
         const menuImport = container.querySelector('#wb-menu-import');
         const menuBatchExport = container.querySelector('#wb-menu-batch-export');
+        const menuBatchMove = container.querySelector('#wb-menu-batch-move');
         const menuBatchDelete = container.querySelector('#wb-menu-batch-delete');
 
         if (menuBtn && dropdownMenu) {
@@ -411,7 +519,7 @@ window.SystemApps['worldbook'] = {
 
         const enterBatchMode = (type) => {
             if (worldbooks.length === 0) {
-                showAlert(type === 'delete' ? '暂无世界书可删除' : '暂无世界书可导出', "此页面显示", "info");
+                showAlert(type === 'delete' ? '暂无世界书可删除' : (type === 'move' ? '暂无世界书可移动' : '暂无世界书可导出'), "此页面显示", "info");
                 return;
             }
             
@@ -426,6 +534,9 @@ window.SystemApps['worldbook'] = {
             } else if (type === 'export') {
                 batchActionBtn.textContent = '导出';
                 batchActionBtn.className = 'minimal-btn minimal-btn-primary';
+            } else if (type === 'move') {
+                batchActionBtn.textContent = '移动';
+                batchActionBtn.className = 'minimal-btn minimal-btn-primary';
             }
             
             updateBatchCount();
@@ -439,12 +550,18 @@ window.SystemApps['worldbook'] = {
                 enterBatchMode('delete');
             });
         }
-
         if (menuBatchExport) {
             menuBatchExport.addEventListener('click', (e) => {
                 e.stopPropagation();
                 dropdownMenu.style.display = 'none';
                 enterBatchMode('export');
+            });
+        }
+        if (menuBatchMove) {
+            menuBatchMove.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.style.display = 'none';
+                enterBatchMode('move');
             });
         }
 
@@ -456,7 +573,6 @@ window.SystemApps['worldbook'] = {
                 version: "1.0",
                 data: selectedWbs
             };
-
             const jsonStr = JSON.stringify(exportData, null, 2);
             const blob = new Blob([jsonStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -479,6 +595,35 @@ window.SystemApps['worldbook'] = {
                 exitBatchMode();
             }
         };
+
+        const wbMovePanel = container.querySelector('#wb-move-panel');
+        const wbMoveGroupSelect = container.querySelector('#wb-move-group-select');
+        
+        const handleBatchMove = () => {
+            if (selectedWbIds.size === 0) return;
+            // 渲染下拉选项
+            wbMoveGroupSelect.innerHTML = wbGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            wbMovePanel.classList.add('active');
+        };
+
+        const hideWbMovePanel = () => {
+            wbMovePanel.classList.remove('active');
+        };
+
+        container.querySelector('#wb-move-cancel').addEventListener('click', hideWbMovePanel);
+        container.querySelector('#wb-move-backdrop').addEventListener('click', hideWbMovePanel);
+        container.querySelector('#wb-move-save').addEventListener('click', () => {
+            const targetGroupId = wbMoveGroupSelect.value;
+            worldbooks.forEach(wb => {
+                if(selectedWbIds.has(wb.id)) {
+                    wb.groupId = targetGroupId;
+                }
+            });
+            saveWorldbooks();
+            hideWbMovePanel();
+            exitBatchMode();
+        });
+
 
         const exitBatchMode = () => {
             isBatchMode = false;
@@ -517,6 +662,8 @@ window.SystemApps['worldbook'] = {
                 checkboxes.forEach(cb => {
                     cb.checked = selectedWbIds.has(cb.dataset.id);
                 });
+                const groupCbs = listContainer.querySelectorAll('.group-checkbox');
+                groupCbs.forEach(cb => cb.checked = (selectedWbIds.size === worldbooks.length));
             });
         }
 
@@ -526,6 +673,8 @@ window.SystemApps['worldbook'] = {
                     handleBatchDelete();
                 } else if (batchModeType === 'export') {
                     handleBatchExport();
+                } else if (batchModeType === 'move') {
+                    handleBatchMove();
                 }
             });
         }
@@ -535,14 +684,171 @@ window.SystemApps['worldbook'] = {
         const pageDetail = container.querySelector('#wb-page-detail');
         const backBtn = container.querySelector('#wb-back-btn');
         const wbCreatePanel = container.querySelector('#wb-create-panel');
+        const groupCreatePanel = container.querySelector('#group-create-panel');
         const entryCreatePanel = container.querySelector('#entry-create-panel');
         const entryEditPanel = container.querySelector('#entry-edit-panel');
         
         let currentWbId = null;
         let currentEditingEntryId = null;
+        let editingGroupId = null;
+
+        // --- 分组管理 ---
+        const groupManagePanel = container.querySelector('#group-manage-panel');
+        const groupManageList = container.querySelector('#group-manage-list');
+        const groupManageClose = container.querySelector('#group-manage-close');
+        const groupManageBackdrop = container.querySelector('#group-manage-backdrop');
+        const groupManageSelectAll = container.querySelector('#group-manage-select-all');
+        const groupManageDeleteBtn = container.querySelector('#group-manage-delete-btn');
+        const groupManageCount = container.querySelector('#group-manage-count');
+        
+        let selectedGroupIds = new Set();
+        
+        const renderGroupManageList = () => {
+            groupManageList.innerHTML = '';
+            const customGroups = wbGroups.filter(g => g.id !== 'default');
+            if (customGroups.length === 0) {
+                groupManageList.innerHTML = `<div style="text-align: center; color: #a1a1aa; font-size: 13px; padding: 20px 0;">暂无自定义分组</div>`;
+                return;
+            }
+
+            customGroups.forEach(group => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display: flex; align-items: center; padding: 12px; background: #f4f4f5; border-radius: 12px; cursor: pointer;';
+                item.innerHTML = `
+                    <input type="checkbox" class="group-manage-cb" data-id="${group.id}" ${selectedGroupIds.has(group.id) ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #18181b; margin-right: 12px; cursor: pointer;">
+                    <span style="font-size: 14px; color: #27272a; flex: 1;">${group.name}</span>
+                `;
+                
+                item.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        const cb = item.querySelector('input');
+                        cb.checked = !cb.checked;
+                        cb.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                item.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) selectedGroupIds.add(group.id);
+                    else selectedGroupIds.delete(group.id);
+                    updateGroupManageUI(customGroups.length);
+                });
+
+                groupManageList.appendChild(item);
+            });
+            updateGroupManageUI(customGroups.length);
+        };
+
+        const updateGroupManageUI = (totalCount) => {
+            if (groupManageCount) groupManageCount.textContent = `已选 ${selectedGroupIds.size} 项`;
+            if (groupManageSelectAll) {
+                groupManageSelectAll.textContent = (selectedGroupIds.size === totalCount && totalCount > 0) ? '取消全选' : '全选';
+            }
+            if (groupManageDeleteBtn) {
+                groupManageDeleteBtn.disabled = selectedGroupIds.size === 0;
+                groupManageDeleteBtn.style.opacity = selectedGroupIds.size === 0 ? '0.5' : '1';
+                groupManageDeleteBtn.style.cursor = selectedGroupIds.size === 0 ? 'not-allowed' : 'pointer';
+            }
+        };
+
+        if (menuManageGroups) {
+            menuManageGroups.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.style.display = 'none';
+                selectedGroupIds.clear();
+                renderGroupManageList();
+                groupManagePanel.classList.add('active');
+            });
+        }
+
+        const hideGroupManagePanel = () => {
+            groupManagePanel.classList.remove('active');
+            selectedGroupIds.clear();
+        };
+
+        if (groupManageClose) groupManageClose.addEventListener('click', hideGroupManagePanel);
+        if (groupManageBackdrop) groupManageBackdrop.addEventListener('click', hideGroupManagePanel);
+
+        if (groupManageSelectAll) {
+            groupManageSelectAll.addEventListener('click', () => {
+                const customGroups = wbGroups.filter(g => g.id !== 'default');
+                if (selectedGroupIds.size === customGroups.length && customGroups.length > 0) {
+                    selectedGroupIds.clear();
+                } else {
+                    customGroups.forEach(g => selectedGroupIds.add(g.id));
+                }
+                const cbs = groupManageList.querySelectorAll('.group-manage-cb');
+                cbs.forEach(cb => cb.checked = selectedGroupIds.has(cb.dataset.id));
+                updateGroupManageUI(customGroups.length);
+            });
+        }
+
+        if (groupManageDeleteBtn) {
+            groupManageDeleteBtn.addEventListener('click', async () => {
+                if (selectedGroupIds.size === 0) return;
+                
+                let affectedWbCount = 0;
+                worldbooks.forEach(w => {
+                    if (selectedGroupIds.has(w.groupId)) affectedWbCount++;
+                });
+
+                let msg = `确定要删除选中的 ${selectedGroupIds.size} 个分组吗？`;
+                if (affectedWbCount > 0) {
+                    msg += `\n注意：这 ${affectedWbCount} 本所属的世界书将被安全移动到“默认分组”。`;
+                }
+
+                const confirmed = await showConfirm(msg, "批量删除分组", "danger");
+                if (confirmed) {
+                    wbGroups = wbGroups.filter(g => g.id === 'default' || !selectedGroupIds.has(g.id));
+                    worldbooks.forEach(w => {
+                        if (selectedGroupIds.has(w.groupId)) w.groupId = 'default';
+                    });
+                    saveGroups();
+                    saveWorldbooks();
+                    renderWbList();
+                    hideGroupManagePanel();
+                }
+            });
+        }
+
+        const hideGroupCreatePanel = () => {
+            groupCreatePanel.classList.remove('active');
+            container.querySelector('#group-new-name').value = '';
+            editingGroupId = null;
+        };
+        
+        if (menuCreateGroup) {
+            menuCreateGroup.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.style.display = 'none';
+                container.querySelector('#group-modal-title').textContent = "新建分组";
+                groupCreatePanel.classList.add('active');
+                container.querySelector('#group-new-name').focus();
+            });
+        }
+
+        container.querySelector('#group-new-cancel').addEventListener('click', hideGroupCreatePanel);
+        container.querySelector('#group-new-backdrop').addEventListener('click', hideGroupCreatePanel);
+        container.querySelector('#group-new-save').addEventListener('click', () => {
+            const name = container.querySelector('#group-new-name').value.trim();
+            if (name) {
+                if (editingGroupId) {
+                    const group = wbGroups.find(g => g.id === editingGroupId);
+                    if(group) group.name = name;
+                } else {
+                    wbGroups.push({
+                        id: 'g_' + Date.now(),
+                        name: name
+                    });
+                }
+                saveGroups();
+                renderWbList();
+                hideGroupCreatePanel();
+            } else {
+                showAlert("请输入分组名称", "无法保存", "danger");
+            }
+        });
 
         // --- 编辑面板的事件绑定 ---
-        
         const hideEntryEditPanel = () => {
             if(entryEditPanel) entryEditPanel.classList.remove('active');
             currentEditingEntryId = null;
@@ -584,20 +890,19 @@ window.SystemApps['worldbook'] = {
                 pageDetail.style.display = 'none';
                 if (backBtn) backBtn.style.display = 'none';
                 currentWbId = null;
-                wbCreatePanel.classList.remove('active'); // 重置为隐藏
+                wbCreatePanel.classList.remove('active');
                 renderWbList();
             } else if (page === 'detail') {
                 pageList.style.display = 'none';
                 pageDetail.style.display = 'flex';
                 if (backBtn) backBtn.style.display = 'block';
-                entryCreatePanel.classList.remove('active'); // 重置为隐藏
+                entryCreatePanel.classList.remove('active');
                 if (entryEditPanel) entryEditPanel.classList.remove('active');
                 renderEntryList();
             }
         };
 
         if (backBtn) {
-            // 确保按钮图标可点击
             const realBtn = backBtn.querySelector('button');
             if (realBtn) {
                 realBtn.addEventListener('click', () => showPage('list'));
@@ -612,10 +917,6 @@ window.SystemApps['worldbook'] = {
 
         const renderWbList = () => {
             listContainer.innerHTML = '';
-            
-            // 空状态完全无卡片底色，融入背景
-            listContainer.style.background = 'transparent';
-            listContainer.style.boxShadow = 'none';
 
             if(isBatchMode) {
                 listContainer.classList.add('batch-mode');
@@ -623,7 +924,7 @@ window.SystemApps['worldbook'] = {
                 listContainer.classList.remove('batch-mode');
             }
 
-            if (worldbooks.length === 0) {
+            if (wbGroups.length === 0 && worldbooks.length === 0) {
                 listContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 20px; text-align: center; width: 100%;">
                         <p style="font-size: 15px; color: #a1a1aa; font-weight: 500; margin: 0 0 8px 0; letter-spacing: 0.025em;">暂无世界书</p>
@@ -632,117 +933,224 @@ window.SystemApps['worldbook'] = {
                 `;
                 return;
             }
-            
-            // 有数据时恢复白底卡片和阴影
-            listContainer.style.background = '#ffffff';
-            listContainer.style.boxShadow = '0 4px 20px -10px rgba(0, 0, 0, 0.03)';
 
-            worldbooks.forEach(wb => {
-                const card = document.createElement('div');
-                card.className = 'wb-card';
-                card.innerHTML = `
-                    <input type="checkbox" class="wb-checkbox" data-id="${wb.id}" ${selectedWbIds.has(wb.id) ? 'checked' : ''}>
-                    
-                    <div class="view-mode-container">
-                        <div style="flex: 1;">
-                            <div class="wb-card-title">${wb.name}</div>
-                            <div class="wb-card-desc">包含 ${wb.entries ? wb.entries.length : 0} 个条目</div>
-                        </div>
-                        <div class="wb-card-actions" style="display: flex; gap: 8px;">
-                            <button class="minimal-btn btn-edit-wb" style="padding: 4px 8px; font-size: 12px;">重命名</button>
-                            <button class="minimal-btn minimal-btn-danger btn-delete-wb" style="padding: 4px 8px; font-size: 12px;">删除</button>
-                        </div>
-                    </div>
+            // 按分组整理数据
+            wbGroups.forEach(group => {
+                const groupWbs = worldbooks.filter(w => w.groupId === group.id);
+                // 即使分组为空也显示，方便管理
+                
+                const groupEl = document.createElement('div');
+                groupEl.className = 'wb-group';
+                
+                // 检查该组内所有wb是否被选中
+                const allSelected = groupWbs.length > 0 && groupWbs.every(w => selectedWbIds.has(w.id));
 
-                    <div class="edit-mode-container">
-                        <input type="text" class="minimal-input edit-wb-input" value="${wb.name}" placeholder="请输入世界书名称...">
-                        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                            <button class="minimal-btn btn-cancel-edit-wb">取消</button>
-                            <button class="minimal-btn minimal-btn-primary btn-save-edit-wb">保存</button>
+                let headerActions = '';
+                if (group.id !== 'default' && !isBatchMode) {
+                    headerActions = `
+                        <div class="wb-group-actions" style="display: flex; gap: 8px;">
+                            <button class="minimal-btn btn-edit-group" style="padding: 4px 8px; font-size: 12px;" data-id="${group.id}">编辑</button>
+                            <button class="minimal-btn minimal-btn-danger btn-delete-group" style="padding: 4px 8px; font-size: 12px;" data-id="${group.id}">删除</button>
                         </div>
+                    `;
+                }
+
+                groupEl.innerHTML = `
+                    <div class="wb-group-header">
+                        <div class="wb-group-title">
+                            <input type="checkbox" class="group-checkbox" data-id="${group.id}" ${allSelected ? 'checked' : ''}>
+                            <i class="ph-bold ph-caret-down" style="color: #a1a1aa; font-size: 12px;"></i>
+                            ${group.name} <span style="color: #a1a1aa; font-size: 12px; font-weight: 400;">(${groupWbs.length})</span>
+                        </div>
+                        ${headerActions}
                     </div>
+                    <div class="wb-group-content"></div>
                 `;
 
-                // 点击卡片 (进入详情)
-                const viewContainer = card.querySelector('.view-mode-container');
-                const editContainer = card.querySelector('.edit-mode-container');
-                
-                viewContainer.addEventListener('click', (e) => {
-                    if(isBatchMode) {
-                        if(e.target.tagName !== 'INPUT') {
-                            const cb = card.querySelector('.wb-checkbox');
-                            cb.checked = !cb.checked;
-                            cb.dispatchEvent(new Event('change'));
+                const contentEl = groupEl.querySelector('.wb-group-content');
+                const headerEl = groupEl.querySelector('.wb-group-header');
+
+                // 折叠/展开
+                headerEl.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                    const isHidden = contentEl.style.display === 'none';
+                    contentEl.style.display = isHidden ? 'flex' : 'none';
+                    const icon = headerEl.querySelector('.ph-caret-down');
+                    if (icon) {
+                        icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+                    }
+                });
+
+                // 分组全选/取消全选
+                const groupCb = groupEl.querySelector('.group-checkbox');
+                if (groupCb) {
+                    groupCb.addEventListener('change', (e) => {
+                        const isChecked = e.target.checked;
+                        groupWbs.forEach(w => {
+                            if(isChecked) selectedWbIds.add(w.id);
+                            else selectedWbIds.delete(w.id);
+                        });
+                        updateBatchCount();
+                        // 重新渲染本组的 checkbox
+                        const wbsCbs = contentEl.querySelectorAll('.wb-checkbox');
+                        wbsCbs.forEach(cb => cb.checked = isChecked);
+                        
+                        if (selectedWbIds.size === worldbooks.length) {
+                            if(batchSelectAllBtn) batchSelectAllBtn.textContent = '取消全选';
+                        } else {
+                            if(batchSelectAllBtn) batchSelectAllBtn.textContent = '全选';
                         }
-                        return;
-                    }
-                    // 点击按钮时不进入详情
-                    if(e.target.tagName === 'BUTTON') return; 
-                    currentWbId = wb.id;
-                    showPage('detail');
-                });
+                    });
+                }
 
-                // checkbox 逻辑
-                const cb = card.querySelector('.wb-checkbox');
-                cb.addEventListener('change', (e) => {
-                    if(e.target.checked) {
-                        selectedWbIds.add(wb.id);
-                    } else {
-                        selectedWbIds.delete(wb.id);
-                    }
-                    if (selectedWbIds.size === worldbooks.length) {
-                        if(batchSelectAllBtn) batchSelectAllBtn.textContent = '取消全选';
-                    } else {
-                        if(batchSelectAllBtn) batchSelectAllBtn.textContent = '全选';
-                    }
-                    updateBatchCount();
-                });
+                // 分组编辑
+                const btnEditGroup = groupEl.querySelector('.btn-edit-group');
+                if (btnEditGroup) {
+                    btnEditGroup.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editingGroupId = group.id;
+                        container.querySelector('#group-modal-title').textContent = "编辑分组";
+                        container.querySelector('#group-new-name').value = group.name;
+                        groupCreatePanel.classList.add('active');
+                    });
+                }
 
-                // 重命名 -> 切换为内联编辑
-                const btnEdit = card.querySelector('.btn-edit-wb');
-                const btnCancelEdit = card.querySelector('.btn-cancel-edit-wb');
-                const btnSaveEdit = card.querySelector('.btn-save-edit-wb');
-                const inputEdit = card.querySelector('.edit-wb-input');
+                // 分组删除
+                const btnDeleteGroup = groupEl.querySelector('.btn-delete-group');
+                if (btnDeleteGroup) {
+                    btnDeleteGroup.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const count = groupWbs.length;
+                        let confirmMsg = `确定要删除分组 "${group.name}" 吗？`;
+                        if (count > 0) {
+                            confirmMsg += `\n该分组下有 ${count} 本世界书，它们将被移动到默认分组。`;
+                        }
+                        const confirmed = await showConfirm(confirmMsg, "删除分组", "danger");
+                        if (confirmed) {
+                            wbGroups = wbGroups.filter(g => g.id !== group.id);
+                            worldbooks.forEach(w => {
+                                if(w.groupId === group.id) w.groupId = 'default';
+                            });
+                            saveGroups();
+                            saveWorldbooks();
+                            renderWbList();
+                        }
+                    });
+                }
 
-                btnEdit.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    viewContainer.style.display = 'none';
-                    editContainer.style.display = 'flex';
-                    inputEdit.focus();
-                });
+                if (groupWbs.length === 0) {
+                    contentEl.innerHTML = `<div style="padding: 16px 20px; font-size: 13px; color: #a1a1aa; text-align: center;">该分组下暂无世界书</div>`;
+                } else {
+                    groupWbs.forEach(wb => {
+                        const card = document.createElement('div');
+                        card.className = 'wb-card';
+                        card.innerHTML = `
+                            <input type="checkbox" class="wb-checkbox" data-id="${wb.id}" ${selectedWbIds.has(wb.id) ? 'checked' : ''}>
+                            
+                            <div class="view-mode-container">
+                                <div style="flex: 1;">
+                                    <div class="wb-card-title">${wb.name}</div>
+                                    <div class="wb-card-desc">包含 ${wb.entries ? wb.entries.length : 0} 个条目</div>
+                                </div>
+                                <div class="wb-card-actions" style="display: flex; gap: 8px;">
+                                    <button class="minimal-btn btn-edit-wb" style="padding: 4px 8px; font-size: 12px;">重命名</button>
+                                    <button class="minimal-btn minimal-btn-danger btn-delete-wb" style="padding: 4px 8px; font-size: 12px;">删除</button>
+                                </div>
+                            </div>
 
-                btnCancelEdit.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    viewContainer.style.display = 'flex';
-                    editContainer.style.display = 'none';
-                    inputEdit.value = wb.name; // 恢复原值
-                });
+                            <div class="edit-mode-container">
+                                <input type="text" class="minimal-input edit-wb-input" value="${wb.name}" placeholder="请输入世界书名称...">
+                                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                                    <button class="minimal-btn btn-cancel-edit-wb">取消</button>
+                                    <button class="minimal-btn minimal-btn-primary btn-save-edit-wb">保存</button>
+                                </div>
+                            </div>
+                        `;
 
-                btnSaveEdit.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const newName = inputEdit.value.trim();
-                    if (newName) {
-                        wb.name = newName;
-                        saveWorldbooks();
-                        renderWbList();
-                    } else {
-                        alert("世界书名称不能为空");
-                    }
-                });
+                        const viewContainer = card.querySelector('.view-mode-container');
+                        const editContainer = card.querySelector('.edit-mode-container');
+                        
+                        viewContainer.addEventListener('click', (e) => {
+                            if(isBatchMode) {
+                                if(e.target.tagName !== 'INPUT') {
+                                    const cb = card.querySelector('.wb-checkbox');
+                                    cb.checked = !cb.checked;
+                                    cb.dispatchEvent(new Event('change'));
+                                }
+                                return;
+                            }
+                            if(e.target.tagName === 'BUTTON') return; 
+                            currentWbId = wb.id;
+                            showPage('detail');
+                        });
 
-                // 删除
-                const btnDelete = card.querySelector('.btn-delete-wb');
-                btnDelete.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const confirmed = await showConfirm(`确定要删除世界书 "${wb.name}" 吗？这将会删除内部所有条目。`, "操作确认", "danger");
-                    if (confirmed) {
-                        worldbooks = worldbooks.filter(w => w.id !== wb.id);
-                        saveWorldbooks();
-                        renderWbList();
-                    }
-                });
+                        const cb = card.querySelector('.wb-checkbox');
+                        cb.addEventListener('change', (e) => {
+                            if(e.target.checked) {
+                                selectedWbIds.add(wb.id);
+                            } else {
+                                selectedWbIds.delete(wb.id);
+                            }
+                            // 更新全选状态
+                            if (selectedWbIds.size === worldbooks.length) {
+                                if(batchSelectAllBtn) batchSelectAllBtn.textContent = '取消全选';
+                            } else {
+                                if(batchSelectAllBtn) batchSelectAllBtn.textContent = '全选';
+                            }
+                            
+                            // 更新该组的全选框状态
+                            const allGroupSelected = groupWbs.every(w => selectedWbIds.has(w.id));
+                            if(groupCb) groupCb.checked = allGroupSelected;
 
-                listContainer.appendChild(card);
+                            updateBatchCount();
+                        });
+
+                        const btnEdit = card.querySelector('.btn-edit-wb');
+                        const btnCancelEdit = card.querySelector('.btn-cancel-edit-wb');
+                        const btnSaveEdit = card.querySelector('.btn-save-edit-wb');
+                        const inputEdit = card.querySelector('.edit-wb-input');
+
+                        btnEdit.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            viewContainer.style.display = 'none';
+                            editContainer.style.display = 'flex';
+                            inputEdit.focus();
+                        });
+
+                        btnCancelEdit.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            viewContainer.style.display = 'flex';
+                            editContainer.style.display = 'none';
+                            inputEdit.value = wb.name; 
+                        });
+
+                        btnSaveEdit.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const newName = inputEdit.value.trim();
+                            if (newName) {
+                                wb.name = newName;
+                                saveWorldbooks();
+                                renderWbList();
+                            } else {
+                                alert("世界书名称不能为空");
+                            }
+                        });
+
+                        const btnDelete = card.querySelector('.btn-delete-wb');
+                        btnDelete.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const confirmed = await showConfirm(`确定要删除世界书 "${wb.name}" 吗？这将会删除内部所有条目。`, "操作确认", "danger");
+                            if (confirmed) {
+                                worldbooks = worldbooks.filter(w => w.id !== wb.id);
+                                saveWorldbooks();
+                                renderWbList();
+                            }
+                        });
+
+                        contentEl.appendChild(card);
+                    });
+                }
+                listContainer.appendChild(groupEl);
             });
         };
 
@@ -757,7 +1165,6 @@ window.SystemApps['worldbook'] = {
 
             entriesContainer.innerHTML = '';
             
-            // 空状态完全无卡片底色
             entriesContainer.style.background = 'transparent';
             entriesContainer.style.boxShadow = 'none';
 
@@ -771,7 +1178,6 @@ window.SystemApps['worldbook'] = {
                 return;
             }
             
-            // 有数据时恢复白底卡片
             entriesContainer.style.background = '#ffffff';
             entriesContainer.style.boxShadow = '0 4px 20px -10px rgba(0, 0, 0, 0.03)';
 
@@ -779,7 +1185,6 @@ window.SystemApps['worldbook'] = {
                 const card = document.createElement('div');
                 card.className = 'entry-card';
                 
-                // 处理转义以防 xss 和解析错误
                 const safeKeyword = (entry.keyword || '').replace(/"/g, '"').replace(/</g, '<').replace(/>/g, '>');
                 const safeWeight = entry.weight !== undefined ? entry.weight : 100;
                 const safeContent = (entry.content || '').replace(/</g, '<').replace(/>/g, '>');
@@ -820,30 +1225,25 @@ window.SystemApps['worldbook'] = {
                     }
                 };
 
-                // 点击卡片进入编辑模式
                 viewContainer.addEventListener('click', (e) => {
-                    // 如果点击的是按钮或者开关，则不触发卡片的点击
                     if(e.target.closest('button')) return;
                     openEditPanel();
                 });
 
-                // 开关切换
                 const toggle = card.querySelector('.entry-toggle');
                 toggle.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 阻止冒泡，避免触发卡片点击
+                    e.stopPropagation();
                     toggle.classList.toggle('active');
                     entry.enabled = toggle.classList.contains('active');
                     saveWorldbooks();
                 });
 
-                // 编辑按钮也进入编辑模式
                 const btnEdit = card.querySelector('.btn-edit-entry');
                 btnEdit.addEventListener('click', (e) => {
                     e.stopPropagation();
                     openEditPanel();
                 });
 
-                // 删除
                 const btnDelete = card.querySelector('.btn-delete-entry');
                 btnDelete.addEventListener('click', async (e) => {
                     e.stopPropagation();
@@ -862,6 +1262,7 @@ window.SystemApps['worldbook'] = {
         // --- 创建动作 (弹窗面板逻辑) ---
         const btnCreateWb = container.querySelector('#btn-create-wb');
         const inputWbNewName = container.querySelector('#wb-new-name');
+        const selectWbNewGroup = container.querySelector('#wb-new-group-select');
         const wbNewBackdrop = container.querySelector('#wb-new-backdrop');
         
         const hideWbCreatePanel = () => {
@@ -871,6 +1272,8 @@ window.SystemApps['worldbook'] = {
 
         if (btnCreateWb) {
             btnCreateWb.addEventListener('click', () => {
+                // 更新分组下拉
+                selectWbNewGroup.innerHTML = wbGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
                 wbCreatePanel.classList.add('active');
                 inputWbNewName.focus();
             });
@@ -884,10 +1287,12 @@ window.SystemApps['worldbook'] = {
         if(wbNewSave) {
             wbNewSave.addEventListener('click', () => {
                 const name = inputWbNewName.value.trim();
+                const groupId = selectWbNewGroup.value;
                 if (name) {
                     const newWb = {
                         id: 'wb_' + Date.now(),
                         name: name,
+                        groupId: groupId || 'default',
                         entries: []
                     };
                     worldbooks.unshift(newWb);
@@ -967,6 +1372,109 @@ window.SystemApps['worldbook'] = {
                 const file = e.target.files[0];
                 if (!file) return;
 
+                // 处理 ZIP 批量导入
+                if (file.name.toLowerCase().endsWith('.zip') && window.zipManager) {
+                    try {
+                        const files = await window.zipManager.processZipFile(file);
+                        if (files && files.length > 0) {
+                            let totalAddedCount = 0;
+                            if (window._currentChatOSAlert) window._currentChatOSAlert('正在解析', '正在读取ZIP内的世界书文件...');
+
+                            for (const f of files) {
+                                const fExtension = f.name.split('.').pop().toLowerCase();
+                                let textContent = '';
+                                
+                                if (fExtension === 'json') {
+                                    textContent = await f.text();
+                                    try {
+                                        const parsedData = JSON.parse(textContent);
+                                        if (parsedData && parsedData.type === "nrj_worldbook_export" && Array.isArray(parsedData.data)) {
+                                            parsedData.data.forEach(wb => {
+                                                const newWbId = 'wb_import_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                                                const newWb = {
+                                                    id: newWbId,
+                                                    name: wb.name || '未命名世界书',
+                                                    groupId: 'default',
+                                                    entries: []
+                                                };
+                                                if (Array.isArray(wb.entries)) {
+                                                    wb.entries.forEach(entry => {
+                                                        newWb.entries.push({
+                                                            id: 'e_import_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                                                            keyword: entry.keyword || '',
+                                                            weight: entry.weight !== undefined ? entry.weight : 100,
+                                                            content: entry.content || '',
+                                                            enabled: entry.enabled !== false
+                                                        });
+                                                    });
+                                                }
+                                                worldbooks.unshift(newWb);
+                                                totalAddedCount++;
+                                            });
+                                        }
+                                    } catch(e) {}
+                                } else {
+                                    if (fExtension === 'txt') {
+                                        textContent = await f.text();
+                                    } else if (fExtension === 'docx') {
+                                        if (typeof mammoth !== 'undefined') {
+                                            const arrayBuffer = await f.arrayBuffer();
+                                            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                                            textContent = result.value;
+                                        }
+                                    }
+                                    
+                                    if (textContent && textContent.trim()) {
+                                        const rawBlocks = textContent.split(/\n\s*\n/);
+                                        const entries = [];
+                                        rawBlocks.forEach((block, idx) => {
+                                            const tBlock = block.trim();
+                                            if (!tBlock) return;
+                                            let keyword = `导入片段 ${idx + 1}`;
+                                            let content = tBlock;
+                                            const match = tBlock.match(/^(.{1,20})[：:]([\s\S]*)$/);
+                                            if (match) {
+                                                keyword = match[1].trim();
+                                                content = match[2].trim() || tBlock;
+                                            } else {
+                                                keyword = tBlock.substring(0, 10).replace(/\n/g, ' ') + '...';
+                                            }
+                                            entries.push({
+                                                id: 'e_' + Date.now() + '_' + idx,
+                                                keyword: keyword,
+                                                content: content,
+                                                enabled: true
+                                            });
+                                        });
+
+                                        const newWb = {
+                                            id: 'wb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                                            name: f.name.replace(/\.[^/.]+$/, "") + ' (导入)',
+                                            groupId: 'default',
+                                            entries: entries
+                                        };
+                                        worldbooks.unshift(newWb);
+                                        totalAddedCount++;
+                                    }
+                                }
+                            }
+
+                            if (totalAddedCount > 0) {
+                                saveWorldbooks();
+                                renderWbList();
+                                showAlert(`成功从ZIP中导入 ${totalAddedCount} 本世界书！`, "导入成功", "success");
+                            } else {
+                                showAlert("未从ZIP中解析到有效世界书内容", "导入失败", "info");
+                            }
+                        }
+                    } catch (err) {
+                        console.log('ZIP 处理被取消或失败:', err);
+                    } finally {
+                        e.target.value = '';
+                    }
+                    return;
+                }
+
                 const fileName = file.name;
                 const extension = fileName.split('.').pop().toLowerCase();
 
@@ -984,6 +1492,7 @@ window.SystemApps['worldbook'] = {
                                 const newWb = {
                                     id: newWbId,
                                     name: wb.name || '未命名世界书',
+                                    groupId: 'default', // 导入的默认放入默认分组
                                     entries: []
                                 };
                                 
@@ -1061,6 +1570,7 @@ window.SystemApps['worldbook'] = {
                         const newWb = {
                             id: 'wb_' + Date.now(),
                             name: wbName + ' (导入)',
+                            groupId: 'default',
                             entries: entries
                         };
 

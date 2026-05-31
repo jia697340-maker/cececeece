@@ -108,8 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // 0.5 图片存储管理器 (支持几百MB大图, IndexedDB + 预留接口)
 // ==============================
 const DB_NAME = 'NRJ_ImageStore';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // 升级版本号以添加新表
 const STORE_NAME = 'images';
+const API_HISTORY_STORE = 'api-history';
 
 // 初始化 IndexedDB
 function initIndexedDB() {
@@ -121,6 +122,11 @@ function initIndexedDB() {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME);
+            }
+            if (!db.objectStoreNames.contains(API_HISTORY_STORE)) {
+                const store = db.createObjectStore(API_HISTORY_STORE, { keyPath: 'id' });
+                store.createIndex('charId', 'charId', { unique: false });
+                store.createIndex('timestamp', 'timestamp', { unique: false });
             }
         };
     });
@@ -217,6 +223,97 @@ const ImageStorageManager = {
             tx.onerror = () => reject(tx.error);
         });
     },
+
+    // ==============================
+    // API 历史记录存储 (针对大段文本)
+    // ==============================
+    
+    async saveApiHistory(record) {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(API_HISTORY_STORE, 'readwrite');
+            const store = tx.objectStore(API_HISTORY_STORE);
+            const request = store.put(record);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async loadApiHistory(charId) {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(API_HISTORY_STORE, 'readonly');
+            const store = tx.objectStore(API_HISTORY_STORE);
+            const index = store.index('charId');
+            const request = index.getAll(IDBKeyRange.only(charId));
+            
+            request.onsuccess = () => {
+                // 按时间降序排序 (最新的在前)
+                const results = request.result || [];
+                results.sort((a, b) => b.timestamp - a.timestamp);
+                resolve(results);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async deleteApiHistory(ids) {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(API_HISTORY_STORE, 'readwrite');
+            const store = tx.objectStore(API_HISTORY_STORE);
+            
+            if (!Array.isArray(ids)) ids = [ids];
+            
+            let completed = 0;
+            let hasError = false;
+            
+            if (ids.length === 0) return resolve();
+
+            ids.forEach(id => {
+                const request = store.delete(id);
+                request.onsuccess = () => {
+                    completed++;
+                    if (completed === ids.length && !hasError) resolve();
+                };
+                request.onerror = () => {
+                    hasError = true;
+                    reject(request.error);
+                };
+            });
+        });
+    },
+
+    async clearApiHistory(charId) {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(API_HISTORY_STORE, 'readwrite');
+            const store = tx.objectStore(API_HISTORY_STORE);
+            const index = store.index('charId');
+            const request = index.openCursor(IDBKeyRange.only(charId));
+            
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    cursor.delete();
+                    cursor.continue();
+                } else {
+                    resolve();
+                }
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async enforceApiHistoryLimit(charId, maxCount) {
+        if (maxCount <= 0) return;
+        const records = await this.loadApiHistory(charId);
+        if (records.length > maxCount) {
+            // records 是降序的，截取后面的就是要删除的
+            const toDelete = records.slice(maxCount).map(r => r.id);
+            await this.deleteApiHistory(toDelete);
+        }
+    }
 };
 
 // 将 ImageStorageManager 挂载到全局 window 对象，供各个 App 调用
@@ -397,6 +494,44 @@ async function initWallpaper() {
         }
     } catch (e) {
         console.error("加载系统壁纸失败:", e);
+    }
+}
+
+// 暴露全局弹窗壁纸方法
+window.applyModalWallpaper = function(url) {
+    let styleTag = document.getElementById('nrj-modal-bg-style');
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'nrj-modal-bg-style';
+        document.head.appendChild(styleTag);
+    }
+    
+    if (url) {
+        styleTag.innerHTML = `
+            .modal-content-wrapper,
+            .popup-content,
+            .chat-popup-content,
+            .settings-container {
+                background-image: url('${url}') !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+                background-color: transparent !important;
+            }
+        `;
+    } else {
+        styleTag.innerHTML = '';
+    }
+};
+
+async function initModalWallpaper() {
+    try {
+        const url = await ImageStorageManager.loadFromIndexedDB('modal-bg');
+        if (url) {
+            window.applyModalWallpaper(url);
+        }
+    } catch (e) {
+        console.error("加载弹窗壁纸失败:", e);
     }
 }
 
@@ -985,6 +1120,7 @@ async function initAll() {
 
     // 初始化壁纸
     initWallpaper();
+    initModalWallpaper();
 
     // 使用新的全局混合渲染逻辑
     await renderDesktop();

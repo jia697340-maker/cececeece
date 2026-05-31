@@ -9,7 +9,7 @@ window.ChatAPI = {
         return null;
     },
 
-    callAPI: async function(messages, settings, abortSignal = null, fallbackMaxTokens = 500) {
+    callAPI: async function(messages, settings, abortSignal = null, fallbackMaxTokens = 500, charId = null) {
         let fetchUrl = settings.url.trim();
         if (!fetchUrl.endsWith('/chat/completions')) {
             if (fetchUrl.endsWith('/')) fetchUrl += 'chat/completions';
@@ -45,19 +45,74 @@ window.ChatAPI = {
         if (abortSignal) {
             fetchOptions.signal = abortSignal;
         }
+        
+        const startTime = Date.now();
+        let apiRecord = null;
+        let responseData = null;
+        let isError = false;
+        let errorMsg = '';
 
-        const response = await fetch(fetchUrl, fetchOptions);
+        try {
+            const response = await fetch(fetchUrl, fetchOptions);
 
-        if (!response.ok) {
-            throw new Error(`API 请求失败 (状态码: ${response.status})`);
+            if (!response.ok) {
+                throw new Error(`API 请求失败 (状态码: ${response.status})`);
+            }
+
+            responseData = await response.json();
+            let replyText = responseData.choices[0].message.content.trim();
+            console.log("========== [Chat API Response] ==========");
+            console.log(replyText);
+            
+            apiRecord = {
+                request: requestBody,
+                response: responseData
+            };
+
+            return replyText;
+        } catch(err) {
+            isError = true;
+            errorMsg = err.message;
+            apiRecord = {
+                request: requestBody,
+                response: { error: err.message }
+            };
+            throw err;
+        } finally {
+            // 保存 API 历史记录
+            if (charId && window.ImageStorageManager && window.ImageStorageManager.saveApiHistory) {
+                try {
+                    const charConfig = JSON.parse(localStorage.getItem(`nrj-chat-config-${charId}`) || '{}');
+                    if (charConfig.enableApiHistory) {
+                        const costTime = Date.now() - startTime;
+                        let tokenUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+                        if (responseData && responseData.usage) {
+                            tokenUsage = responseData.usage;
+                        }
+                        
+                        const record = {
+                            id: 'api_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                            charId: charId,
+                            timestamp: Date.now(),
+                            costTime: costTime,
+                            isError: isError,
+                            errorMsg: errorMsg,
+                            model: settings.model,
+                            usage: tokenUsage,
+                            data: apiRecord
+                        };
+                        
+                        await window.ImageStorageManager.saveApiHistory(record);
+                        
+                        // 强制清理超出限制的旧记录
+                        const limit = charConfig.apiHistoryLimit !== undefined ? charConfig.apiHistoryLimit : 50;
+                        await window.ImageStorageManager.enforceApiHistoryLimit(charId, limit);
+                    }
+                } catch(e) {
+                    console.error("保存 API 历史记录失败", e);
+                }
+            }
         }
-
-        const data = await response.json();
-        let replyText = data.choices[0].message.content.trim();
-        console.log("========== [Chat API Response] ==========");
-        console.log(replyText);
-
-        return replyText;
     },
 
     extractTimezone: async function(personaText) {
@@ -115,7 +170,7 @@ ${combinedMems}`;
         return await this.callAPI([{ role: "user", content: prompt }], requestSettings, null, 800);
     },
 
-    chatCompletion: async function(messages, settings, abortSignal) {
-        return await this.callAPI(messages, settings, abortSignal);
+    chatCompletion: async function(messages, settings, abortSignal, charId = null) {
+        return await this.callAPI(messages, settings, abortSignal, 500, charId);
     }
 };

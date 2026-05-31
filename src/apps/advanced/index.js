@@ -125,6 +125,27 @@ window.SystemApps['advanced'] = {
                         </div>
                     </div>
 
+                    <!-- 交互体验 Section -->
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">交互体验</h2>
+                        <div class="settings-card">
+                            <div class="settings-item">
+                                <div class="settings-item-icon">
+                                    <i class="ph-bold ph-tabs"></i>
+                                </div>
+                                <div class="settings-item-content">
+                                    <p class="settings-item-title">记住角色设置标签页</p>
+                                    <p class="settings-item-desc">再次打开角色设置时自动恢复到上次浏览的标签</p>
+                                </div>
+                                <div class="settings-item-right">
+                                    <button type="button" class="settings-toggle" id="toggle-remember-tab">
+                                        <span class="settings-toggle-slider"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 开发者选项 Section -->
                     <div class="settings-section">
                         <h2 class="settings-section-title">开发者选项</h2>
@@ -285,6 +306,21 @@ window.SystemApps['advanced'] = {
                 } else {
                     alert('提示词不能为空！');
                 }
+            });
+        }
+
+        // 初始化记住标签页开关
+        const toggleRememberTab = container.querySelector('#toggle-remember-tab');
+        if (toggleRememberTab) {
+            const isRememberTabEnabled = localStorage.getItem('nrj-remember-cs-tab') === 'true';
+            if (isRememberTabEnabled) {
+                toggleRememberTab.classList.add('active');
+            }
+
+            toggleRememberTab.addEventListener('click', () => {
+                toggleRememberTab.classList.toggle('active');
+                const isActive = toggleRememberTab.classList.contains('active');
+                localStorage.setItem('nrj-remember-cs-tab', isActive);
             });
         }
 
